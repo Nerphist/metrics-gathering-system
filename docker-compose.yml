@@ -1,0 +1,42 @@
+version: "3.3"
+services:
+  auth_service:
+    depends_on:
+      - postgres
+    build:
+      context: ./auth_service/
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - POSTGRES_HOST=172.28.0.1
+      - ENV=PROD
+    networks:
+      web:
+        ipv4_address: 172.28.0.2
+    ports:
+      - 8001:8001
+  postgres:
+    image: postgres:13
+    networks:
+      web:
+        ipv4_address: 172.28.0.1
+    ports:
+      - 5432:5432
+    volumes:
+      - db-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - PGDATA=/var/lib/postgresql/data
+networks:
+  web:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+volumes:
+  db-volume:
+    external: true
