@@ -6,3 +6,4 @@ psycopg2-binary==2.8.6
 PyJWT==2.0.0
 pytz==2020.5
 sqlparse==0.4.1
+django-cors-headers==3.2.0
