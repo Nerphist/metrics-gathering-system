@@ -33,6 +33,7 @@ services:
   metrics_service:
     depends_on:
       - postgres-metrics
+      - auth_service
     build:
       context: ./metrics_service/
       dockerfile: Dockerfile
@@ -41,6 +42,7 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - POSTGRES_HOST=172.28.0.5
+      - AUTH_API_URL=172.28.0.2:8001
     networks:
       web:
         ipv4_address: 172.28.0.4

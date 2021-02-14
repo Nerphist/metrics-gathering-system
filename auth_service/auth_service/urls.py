@@ -16,10 +16,12 @@ Including another URLconf
 from django.urls import path
 from rest_framework_simplejwt.views import token_refresh, token_obtain_pair
 
-from users.views import UserView
+from users.views import RegisterView, GetUserView
 
 urlpatterns = [
     path('token/refresh/', token_refresh, name='token_refresh'),
     path('login/', token_obtain_pair, name='login'),
-    path('register/', UserView.as_view({'post': 'create'}, name='register'))
+    path('register/', RegisterView.as_view({'post': 'create'}, name='register')),
+    path('get-user/<int:user_id>/', GetUserView.as_view({'get': 'retrieve'}, name='get-user')),
+
 ]

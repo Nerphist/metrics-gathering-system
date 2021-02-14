@@ -11,3 +11,6 @@ class MetricsData(Base):
     metric_type = Column(String(255))
     value = Column(Integer)
     unit = Column(String(31))
+
+    def as_dict(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
