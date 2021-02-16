@@ -10,6 +10,8 @@ AUTH_API_URL = environ.get('AUTH_API_URL', 'localhost:8001')
 class User:
     id: int
     email: str
+    first_name: str
+    last_name: str
 
 
 def get_user(user_id: int) -> User:
