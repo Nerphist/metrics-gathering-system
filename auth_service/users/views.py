@@ -1,12 +1,11 @@
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
 from rest_framework.permissions import AllowAny
-from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework_simplejwt.views import TokenViewBase
 
 from users.models import User
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, UserWithTokenSerializer
 
 
 class RegisterView(CreateModelMixin, GenericViewSet):
@@ -28,3 +27,7 @@ class GetUserView(RetrieveModelMixin, GenericViewSet):
             return Response(data={'details': 'User not found'}, status=404)
         serializer = self.get_serializer(instance)
         return Response(data=serializer.data, status=200)
+
+
+class LoginView(TokenViewBase):
+    serializer_class = UserWithTokenSerializer
