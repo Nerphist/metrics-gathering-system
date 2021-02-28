@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from os import environ
+from typing import Dict
 
 import requests
 
@@ -20,3 +21,9 @@ def get_user(user_id: int) -> User:
         return None
     user = User(**response.json())
     return user
+
+
+def auth_user(headers: Dict[str, str]) -> bool:
+    response = requests.get(url=f'http://{AUTH_API_URL}/auth_user/',
+                            headers={k.capitalize(): v for k, v in headers.items()})
+    return response.status_code == 200

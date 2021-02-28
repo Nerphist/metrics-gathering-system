@@ -1,8 +1,8 @@
 from os import environ
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Column, Integer
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 db_user = environ.get('POSTGRES_USER', '')
 db_password = environ.get('POSTGRES_PASSWORD', '')
@@ -14,4 +14,18 @@ SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}/{db_n
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 db = sessionmaker(bind=engine)
-Base = declarative_base()
+
+
+class Base:
+    id = Column(Integer, primary_key=True)
+
+
+Base = declarative_base(cls=Base)
+
+
+def get_db() -> Session:
+    session = db()
+    try:
+        yield session
+    finally:
+        session.close()
