@@ -26,7 +26,7 @@ async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'details': 'Building already exists'}, status_code=400)
+        return JSONResponse(content={'detail': 'Building already exists'}, status_code=400)
     return BuildingModel.from_orm(building)
 
 
@@ -52,7 +52,7 @@ async def add_floor(body: AddFloorModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'details': 'Floor already exists'}, status_code=400)
+        return JSONResponse(content={'detail': 'Floor already exists'}, status_code=400)
     return FloorModel.from_orm(floor)
 
 
@@ -78,7 +78,7 @@ async def add_room(body: AddRoomModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'details': 'Room already exists'}, status_code=400)
+        return JSONResponse(content={'detail': 'Room already exists'}, status_code=400)
     return RoomModel.from_orm(room)
 
 

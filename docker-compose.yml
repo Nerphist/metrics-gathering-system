@@ -62,6 +62,38 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - PGDATA=/var/lib/postgresql/data
+  task_service:
+    depends_on:
+      - postgres-tasks
+      - auth_service
+    build:
+      context: ./task_service/
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - POSTGRES_HOST=172.28.0.7
+      - AUTH_API_URL=172.28.0.2:8001
+    networks:
+      web:
+        ipv4_address: 172.28.0.6
+    ports:
+      - 8003:8003
+  postgres-tasks:
+    image: postgres:13
+    networks:
+      web:
+        ipv4_address: 172.28.0.7
+    ports:
+      - 5435:5432
+    volumes:
+      - db-tasks-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - PGDATA=/var/lib/postgresql/data
 networks:
   web:
     ipam:
@@ -72,4 +104,6 @@ volumes:
   db-auth-volume:
     external: true
   db-metrics-volume:
+    external: true
+  db-tasks-volume:
     external: true

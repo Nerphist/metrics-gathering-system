@@ -21,10 +21,10 @@ class AddReadingModel(BaseModel):
 
 
 class AddDeviceModel(BaseModel):
-    room_id: int
     name: str
     type: str
     serial: str
+    room_id: int = None
     model_number: str = ''
     description: str = ''
     manufacture_date: datetime = datetime.utcnow()
