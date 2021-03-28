@@ -11,6 +11,28 @@ from request_models.tasks import TaskModel, AddTaskModel, AddTaskNoteModel, Task
 from routes import tasks_router
 
 
+@tasks_router.get("/status/", status_code=200)
+async def get_tasks_status():
+    return {
+        'status': 'info',
+        'header': 'Everything is fine',
+        'message': 'Tasks are properly performed.'
+    }
+
+
+@tasks_router.get("/weekly-report/", status_code=200)
+async def get_tasks_status():
+    return {
+        'Mon': 0,
+        'Tue': 4,
+        'Wed': 3,
+        'Thu': 5,
+        'Fri': 6,
+        'Sat': 8,
+        'Sun': 10,
+    }
+
+
 @tasks_router.get("/", status_code=200, response_model=List[TaskModel])
 async def get_tasks(db: Session = Depends(get_db), creator_id: int = None, assignee_id: int = None):
     tasks = db.query(Task)
