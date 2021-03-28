@@ -1,9 +1,8 @@
 from typing import List
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from starlette.responses import JSONResponse
 
 from db import get_db
 from models.location import Building, Location, Floor, Room
@@ -26,7 +25,7 @@ async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'detail': 'Building already exists'}, status_code=400)
+        raise HTTPException(detail='Building already exists', status_code=400)
     return BuildingModel.from_orm(building)
 
 
@@ -52,7 +51,7 @@ async def add_floor(body: AddFloorModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'detail': 'Floor already exists'}, status_code=400)
+        raise HTTPException(detail='Floor already exists', status_code=400)
     return FloorModel.from_orm(floor)
 
 
@@ -78,7 +77,7 @@ async def add_room(body: AddRoomModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'detail': 'Room already exists'}, status_code=400)
+        raise HTTPException(detail='Room already exists', status_code=400)
     return RoomModel.from_orm(room)
 
 
@@ -87,6 +86,7 @@ async def remove_room(room_id: int, db: Session = Depends(get_db)):
     db.query(Room).filter_by(id=room_id).delete()
     db.commit()
     return ""
+
 
 @metrics_router.delete("/rooms/{room_id}/", status_code=200)
 async def remove_room(room_id: int, db: Session = Depends(get_db)):

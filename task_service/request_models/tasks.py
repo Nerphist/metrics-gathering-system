@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List
 
@@ -28,9 +29,17 @@ class AddTaskModel(BaseModel):
 
     @validator('assignee_id', 'creator_id')
     def user_exists(cls, value):
-        if value is not None and not get_user(value):
+        if os.environ.get('DEBUG') == 'False' and value is not None and not get_user(value):
             raise ValueError(f'Wrong user id: {value}')
         return value
+
+
+class AlterTaskModel(BaseModel):
+    name: str = None
+    priority: int = None
+    description: str = None
+    grade: float = None
+    assignee_id: int = None
 
 
 class AddTaskNoteModel(BaseModel):

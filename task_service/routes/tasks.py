@@ -1,13 +1,12 @@
 from typing import List
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from starlette.responses import JSONResponse
 
 from db import get_db
 from models.tasks import Task, TaskNote
-from request_models.tasks import TaskModel, AddTaskModel, AddTaskNoteModel, TaskNoteModel
+from request_models.tasks import TaskModel, AddTaskModel, AddTaskNoteModel, TaskNoteModel, AlterTaskModel
 from routes import tasks_router
 
 
@@ -59,7 +58,25 @@ async def add_task(body: AddTaskModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'detail': 'Task already exists'}, status_code=400)
+        raise HTTPException(detail='Task already exists', status_code=400)
+    return TaskModel.from_orm(task)
+
+
+@tasks_router.patch("/{task_id}/", status_code=200, response_model=TaskModel)
+async def alter_task(body: AlterTaskModel, task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter_by(id=task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail='Task not found')
+
+    for key, val in body.dict().items():
+        if val is not None:
+            setattr(task, key, val)
+
+    db.merge(task)
+    try:
+        db.commit()
+    except IntegrityError as e:
+        raise HTTPException(detail=f'Exception on altering task {str(e)}', status_code=400)
     return TaskModel.from_orm(task)
 
 
@@ -83,7 +100,7 @@ async def add_task_note(body: AddTaskNoteModel, db: Session = Depends(get_db)):
     try:
         db.commit()
     except IntegrityError:
-        return JSONResponse(content={'detail': 'Task node already exists'}, status_code=400)
+        raise HTTPException(detail='Task already exists', status_code=400)
     return TaskNoteModel.from_orm(note)
 
 
