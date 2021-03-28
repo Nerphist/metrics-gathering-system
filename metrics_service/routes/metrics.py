@@ -39,10 +39,12 @@ async def recognize_device(recognition_key: str, db: Session = Depends(get_db)):
 
 
 @metrics_router.get("/devices/", status_code=200, response_model=List[DeviceModel])
-async def get_devices(room_id: int = 0, db: Session = Depends(get_db)):
+async def get_devices(room_id: int = 0, device_name: str = '', db: Session = Depends(get_db)):
     devices = db.query(Device)
     if room_id:
         devices = devices.filter_by(room_id=room_id)
+    if device_name:
+        devices = devices.filter(Device.name.contains(device_name))
     return [DeviceModel.from_orm(d) for d in devices]
 
 
