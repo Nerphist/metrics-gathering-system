@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, UniqueConstraint
@@ -24,6 +25,8 @@ class Device(Base):
     description = Column(String(255), default='')
     manufacture_date = Column(DateTime, default=datetime.utcnow)
     type = Column(String(255), default='')
+    secret_key = Column(String(63), default=uuid.uuid4, index=True, unique=True)
+    recognition_key = Column(String(63), default=uuid.uuid4, index=True, unique=True)
 
     room_id = Column(Integer, ForeignKey('building_floor_rooms.id'))
     readings = relationship(Reading, backref='device')

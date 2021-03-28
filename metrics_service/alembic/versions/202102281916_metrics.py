@@ -23,6 +23,8 @@ def upgrade():
                     sa.Column('model_number', sa.String(length=255), nullable=True),
                     sa.Column('name', sa.String(length=255), nullable=True),
                     sa.Column('description', sa.String(length=255), nullable=True),
+                    sa.Column('secret_key', sa.String(length=63), nullable=True, unique=True),
+                    sa.Column('recognition_key', sa.String(length=63), nullable=True, unique=True),
                     sa.Column('manufacture_date', sa.DateTime(), nullable=True),
                     sa.Column('type', sa.String(length=255), nullable=True),
                     sa.Column('room_id', sa.Integer(), nullable=True),
@@ -30,6 +32,8 @@ def upgrade():
                     sa.PrimaryKeyConstraint('id'),
                     sa.UniqueConstraint('serial')
                     )
+    op.create_index(op.f('ix_devices_secret_key'), 'devices', ['secret_key'], unique=True)
+    op.create_index(op.f('ix_devices_recognition_key'), 'devices', ['recognition_key'], unique=True)
     op.create_table('meters',
                     sa.Column('id', sa.Integer(), nullable=False),
                     sa.Column('device_id', sa.Integer(), nullable=True),

@@ -9,6 +9,10 @@ from models.metrics import Device, Reading
 ReadingModel = sqlalchemy_to_pydantic(Reading)
 
 
+class RecognizeDeviceModel(BaseModel):
+    device_exists: bool
+
+
 class DeviceModel(sqlalchemy_to_pydantic(Device)):
     readings: List[ReadingModel]
 
@@ -16,7 +20,6 @@ class DeviceModel(sqlalchemy_to_pydantic(Device)):
 class AddReadingModel(BaseModel):
     value: str
     type: str
-    device_id: int
     date: datetime = datetime.utcnow()
 
 

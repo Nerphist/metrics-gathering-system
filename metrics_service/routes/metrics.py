@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import Depends
+from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models.metrics import Reading, Device
-from request_models.metrics import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel
+from request_models.metrics import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel, RecognizeDeviceModel
 from routes import metrics_router
 
 
@@ -18,11 +18,24 @@ async def get_readings(device_id: int = 0, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/readings/", status_code=201, response_model=ReadingModel)
-async def add_reading(body: AddReadingModel, db: Session = Depends(get_db)):
-    reading = Reading(date=body.date, type=body.type, value=body.value, device_id=body.device_id)
+async def add_reading(body: AddReadingModel, db: Session = Depends(get_db), secret_key: Optional[str] = Header(None)):
+    reading = Reading(date=body.date, type=body.type, value=body.value)
+    device = db.query(Device).filter(Device.secret_key == secret_key).first()
+    if not device:
+        raise HTTPException(status_code=400, detail="Wrong secret key")
+
+    reading.device_id = device.id
     db.add(reading)
     db.commit()
     return ReadingModel.from_orm(reading)
+
+
+@metrics_router.get("/devices/recognize/{recognition_key}/", status_code=201, response_model=RecognizeDeviceModel)
+async def recognize_device(recognition_key: str, db: Session = Depends(get_db)):
+    device = db.query(Device).filter(Device.recognition_key == recognition_key).first()
+    if not device:
+        return {'device_exists': False}
+    return {'device_exists': True}
 
 
 @metrics_router.get("/devices/", status_code=200, response_model=List[DeviceModel])
