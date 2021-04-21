@@ -16,13 +16,17 @@ Including another URLconf
 from django.urls import path
 from rest_framework_simplejwt.views import token_refresh
 
-from users.views import RegisterView, GetUserView, LoginView, get_user_info, GetAllUsersView
+from users.views import GetUserView, LoginView, get_user_info, GetAllUsersView, add_user, \
+    ConfirmInviteView, GetByInviteView, get_all_created_invitations
 
 urlpatterns = [
     path('token/refresh/', token_refresh, name='Token refresh'),
     path('login/', LoginView.as_view(), name='Login'),
-    path('register/', RegisterView.as_view({'post': 'create'}, name='Register')),
+    path('add-user/', add_user, name='Add user'),
     path('users/<int:user_id>/', GetUserView.as_view({'get': 'retrieve'}, name='Get user')),
     path('users/', GetAllUsersView.as_view({'get': 'list'}, name='Get all users')),
+    path('invites/', get_all_created_invitations, name='Get all invited which user has made'),
+    path('invites/<str:secret_key>/', GetByInviteView.as_view({'get': 'retrieve'}), name='Get info about invite'),
+    path('invites/<str:secret_key>/commit/', ConfirmInviteView.as_view(), name='Accept the invite'),
     path('auth_user/', get_user_info, name='Get user by token'),
 ]

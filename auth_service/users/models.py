@@ -2,6 +2,8 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models, transaction
 
+from users.utils import generate_secret_key, generate_expiration_date
+
 
 class AbstractCreateUpdateModel(models.Model):
     class Meta:
@@ -33,7 +35,9 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractCreateUpdateModel):
 
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    email = models.EmailField(max_length=64, unique=True)
+    email = models.EmailField(max_length=255, unique=True)
+    password = models.CharField(max_length=511)
+    activated = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -43,3 +47,10 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractCreateUpdateModel):
     def save(self, *args, **kwargs):
         super(User, self).save(*args, **kwargs)
         return self
+
+
+class Invite(AbstractCreateUpdateModel):
+    invitee = models.OneToOneField(User, on_delete=models.CASCADE, related_name='received_invitation')
+    inviter = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, related_name='created_invitations')
+    secret_key = models.CharField(max_length=511, db_index=True, unique=True, default=generate_secret_key)
+    expiration_date = models.DateTimeField(default=generate_expiration_date)

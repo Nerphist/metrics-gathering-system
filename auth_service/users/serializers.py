@@ -5,7 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User
+from users.models import User, Invite
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,6 +16,33 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
+
+
+class UserPartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'last_name')
+
+
+class AddUserSerializer(serializers.Serializer):
+
+    def update(self, instance, validated_data):
+        super(AddUserSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        super(AddUserSerializer, self).create(validated_data)
+
+    first_name = serializers.CharField(max_length=255, required=True)
+    last_name = serializers.CharField(max_length=255, required=True)
+
+
+class InviteSerializer(serializers.ModelSerializer):
+    invitee = UserPartSerializer()
+    inviter = UserSerializer()
+
+    class Meta:
+        model = Invite
+        fields = ('id', 'secret_key', 'expiration_date', 'invitee', 'inviter')
 
 
 class UserWithTokenSerializer(serializers.Serializer):
@@ -55,3 +82,9 @@ class UserWithTokenSerializer(serializers.Serializer):
         data.update(user_serializer.data)
 
         return data
+
+    def update(self, instance, validated_data):
+        super(UserWithTokenSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        super(UserWithTokenSerializer, self).create(validated_data)

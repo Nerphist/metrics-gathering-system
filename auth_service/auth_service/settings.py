@@ -31,6 +31,8 @@ AUTH_USER_MODEL = 'users.User'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+INVITATION_EXPIRATION_TIME = timedelta(days=1)
+
 # Application definition
 
 INSTALLED_APPS = [
