@@ -3,15 +3,7 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models, transaction
 
 from users.utils import generate_secret_key, generate_expiration_date
-
-
-class AbstractCreateUpdateModel(models.Model):
-    class Meta:
-        abstract = True
-        ordering = ['pk']
-
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
+from utils import AbstractCreateUpdateModel
 
 
 class UserManager(BaseUserManager):
@@ -54,3 +46,9 @@ class Invite(AbstractCreateUpdateModel):
     inviter = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, related_name='created_invitations')
     secret_key = models.CharField(max_length=511, db_index=True, unique=True, default=generate_secret_key)
     expiration_date = models.DateTimeField(default=generate_expiration_date)
+
+
+class UserGroup(AbstractCreateUpdateModel):
+    name = models.CharField(max_length=255, unique=True)
+    users = models.ManyToManyField(User, related_name='user_groups')
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='controlled_group')

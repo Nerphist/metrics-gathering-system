@@ -13,20 +13,49 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.urls import path
+from django.conf.urls import url
+from django.contrib.auth.hashers import make_password
+from django.urls import path, include
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
 from rest_framework_simplejwt.views import token_refresh
 
-from users.views import GetUserView, LoginView, get_user_info, GetAllUsersView, add_user, \
-    ConfirmInviteView, GetByInviteView, get_all_created_invitations
+from auth_service.settings import ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_GROUP_NAME
+from users.models import UserGroup, User
+from users.urls import urlpatterns as user_urls
+from users.views import LoginView
+
+
+def create_admin():
+    try:
+        admin = User.objects.create(email=ADMIN_EMAIL, password=make_password(ADMIN_PASSWORD), first_name='admin',
+                                    last_name='admin')
+        admin_group = UserGroup.objects.create(name=ADMIN_GROUP_NAME, admin=admin)
+        admin_group.users.add(admin)
+    except:
+        pass
+
+
+create_admin()
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Snippets API",
+        default_version='v1',
+        description="Test description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="contact@snippets.local"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
+    url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('token/refresh/', token_refresh, name='Token refresh'),
     path('login/', LoginView.as_view(), name='Login'),
-    path('add-user/', add_user, name='Add user'),
-    path('users/<int:user_id>/', GetUserView.as_view({'get': 'retrieve'}, name='Get user')),
-    path('users/', GetAllUsersView.as_view({'get': 'list'}, name='Get all users')),
-    path('invites/', get_all_created_invitations, name='Get all invited which user has made'),
-    path('invites/<str:secret_key>/', GetByInviteView.as_view({'get': 'retrieve'}), name='Get info about invite'),
-    path('invites/<str:secret_key>/commit/', ConfirmInviteView.as_view(), name='Accept the invite'),
-    path('auth-user/', get_user_info, name='Get user by token'),
+    url(r'^users/', include(user_urls)),
 ]

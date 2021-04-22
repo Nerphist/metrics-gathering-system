@@ -31,7 +31,14 @@ AUTH_USER_MODEL = 'users.User'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+# custom settings start
+
 INVITATION_EXPIRATION_TIME = timedelta(days=1)
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '1234@gmail.com')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '1234')
+ADMIN_GROUP_NAME = os.environ.get('ADMIN_GROUP_NAME', 'Administration')
+
+# custom settings end
 
 # Application definition
 
@@ -43,8 +50,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'permissions',
     'rest_framework',
     'corsheaders',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -101,6 +110,16 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ]
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
 }
 
 # Password validation

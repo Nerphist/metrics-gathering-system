@@ -5,13 +5,13 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User, Invite
+from users.models import User, Invite, UserGroup
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'password', 'first_name', 'last_name')
+        fields = ('id', 'created', 'updated', 'email', 'password', 'first_name', 'last_name')
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate_password(self, value: str) -> str:
@@ -25,15 +25,14 @@ class UserPartSerializer(serializers.ModelSerializer):
 
 
 class AddUserSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=255, required=True)
+    last_name = serializers.CharField(max_length=255, required=True)
 
     def update(self, instance, validated_data):
         super(AddUserSerializer, self).update(instance, validated_data)
 
     def create(self, validated_data):
         super(AddUserSerializer, self).create(validated_data)
-
-    first_name = serializers.CharField(max_length=255, required=True)
-    last_name = serializers.CharField(max_length=255, required=True)
 
 
 class InviteSerializer(serializers.ModelSerializer):
@@ -42,7 +41,7 @@ class InviteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invite
-        fields = ('id', 'secret_key', 'expiration_date', 'invitee', 'inviter')
+        fields = ('id', 'created', 'updated', 'secret_key', 'expiration_date', 'invitee', 'inviter')
 
 
 class UserWithTokenSerializer(serializers.Serializer):
@@ -88,3 +87,39 @@ class UserWithTokenSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         super(UserWithTokenSerializer, self).create(validated_data)
+
+
+class UserGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserGroup
+        fields = ('id', 'created', 'updated', 'name', 'admin', 'users',)
+
+
+class AddUserToGroupSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True)
+
+    def update(self, instance, validated_data):
+        super(AddUserToGroupSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        super(AddUserToGroupSerializer, self).create(validated_data)
+
+
+class CreateUserGroupSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=255)
+
+    def update(self, instance, validated_data):
+        super(CreateUserGroupSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        super(CreateUserGroupSerializer, self).create(validated_data)
+
+
+class SwitchUserGroupAdminSerializer(serializers.Serializer):
+    new_admin_id = serializers.IntegerField(required=True)
+
+    def update(self, instance, validated_data):
+        super(SwitchUserGroupAdminSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        super(SwitchUserGroupAdminSerializer, self).create(validated_data)
