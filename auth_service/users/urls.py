@@ -16,5 +16,7 @@ urlpatterns = [
     path('groups/<int:user_group_id>/', UserGroupRetrieveView.as_view(), name='Get group'),
     path('groups/<int:user_group_id>/add-user/', add_user_to_group, name='Add user to group'),
     path('groups/<int:user_group_id>/switch-admin/', switch_user_group_admin, name='Switch group admin'),
+    path('groups/<int:user_group_id>/remove-user/<int:user_to_remove_id>', remove_from_group,
+         name='Remove user from group'),
 
 ]

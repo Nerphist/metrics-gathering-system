@@ -90,6 +90,9 @@ class UserWithTokenSerializer(serializers.Serializer):
 
 
 class UserGroupSerializer(serializers.ModelSerializer):
+    admin = UserSerializer()
+    users = UserSerializer(many=True)
+
     class Meta:
         model = UserGroup
         fields = ('id', 'created', 'updated', 'name', 'admin', 'users',)

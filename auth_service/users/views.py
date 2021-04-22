@@ -1,4 +1,5 @@
 from django.contrib.auth.hashers import make_password
+from django.db import IntegrityError
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
@@ -10,7 +11,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.views import TokenViewBase
 
-from permissions.permissions import IsAdmin
+from auth_service.settings import ADMIN_GROUP_NAME
+from permissions.permissions import IsAdminPermission, is_admin, is_super_admin
 from users.models import User, Invite, UserGroup
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer
@@ -85,12 +87,15 @@ class ConfirmInviteView(APIView):
 class UserGroupListView(APIView):
 
     @swagger_auto_schema(request_body=CreateUserGroupSerializer, responses={'201': UserGroupSerializer})
-    @permission_classes([IsAuthenticated, IsAdmin])
+    @permission_classes([IsAuthenticated, IsAdminPermission])
     def post(self, request: Request, *args, **kwargs):
         serializer = CreateUserGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), admin=request.user)
+        try:
+            user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), admin=request.user)
+        except IntegrityError:
+            return Response(data={'detail': 'Such group already exists'}, status=400)
 
         return Response(data=UserGroupSerializer(user_group).data, status=201)
 
@@ -98,12 +103,12 @@ class UserGroupListView(APIView):
     @permission_classes([IsAuthenticated])
     def get(self, request: Request, *args, **kwargs):
         query = UserGroup.objects
-        if IsAdmin().has_permission(request):
+        if is_admin(request.user):
             groups = query.all()
         else:
-            groups = request.user.user_groups
+            groups = request.user.user_groups.all()
 
-        return Response(data=[UserGroupSerializer(user_group) for user_group in groups])
+        return Response(data=[UserGroupSerializer(user_group).data for user_group in groups])
 
 
 class UserGroupRetrieveView(APIView):
@@ -115,20 +120,23 @@ class UserGroupRetrieveView(APIView):
         user_group = UserGroup.objects.filter(id=user_group_id).first()
         if not user_group:
             return Response(data={'detail': 'User group not found'}, status=404)
-        if not IsAdmin().has_permission(request) and user_group not in request.user.user_groups:
+        if not is_admin(request.user) and user_group not in request.user.user_groups.all():
             return Response(data={'detail': 'User cannot view this group'}, status=403)
 
-        return Response(data=UserGroupSerializer(user_group))
+        return Response(data=UserGroupSerializer(user_group).data)
 
-    @swagger_auto_schema
+    @swagger_auto_schema()
     @permission_classes([IsAuthenticated])
     def delete(self, request: Request, user_group_id: int, *args, **kwargs):
 
         user_group = UserGroup.objects.filter(id=user_group_id).first()
         if not user_group:
             return Response(data={'detail': 'User group not found'}, status=404)
-        if not IsAdmin().has_permission(request) and user_group.admin != request.user:
+        if not is_admin(request.user) and user_group.admin != request.user:
             return Response(data={'detail': 'User cannot delete this group'}, status=403)
+
+        if user_group.name == ADMIN_GROUP_NAME:
+            return Response(data={'detail': 'Impossible to delete the admin group'}, status=400)
 
         user_group.delete()
 
@@ -180,10 +188,10 @@ def add_user_to_group(request: Request, user_group_id: int, *args, **kwargs):
     if not user_group:
         return Response(data={'detail': 'User group not found'}, status=404)
 
-    if not IsAdmin().has_permission(request) and user_group.admin != request.user:
+    if not is_admin(request.user) and user_group.admin != request.user:
         return Response(data={'detail': 'You must be a group admin to add users to it'}, status=403)
 
-    if user not in user_group.users:
+    if user not in user_group.users.all():
         user_group.users.add(user)
 
     return Response(data=UserGroupSerializer(user_group).data, status=200)
@@ -203,8 +211,46 @@ def switch_user_group_admin(request: Request, user_group_id: int, *args, **kwarg
     if not new_admin:
         return Response(data={'detail': 'User not found'}, status=404)
 
-    user_group.admin = new_admin
-    if new_admin not in user_group.users:
-        user_group.users.add(new_admin)
+    if user_group.name == ADMIN_GROUP_NAME:
+        if not is_super_admin(request.user):
+            return Response(data={'detail': 'Only super admin can change this role'}, status=403)
+
+    if is_admin(request.user) or request.user == user_group.admin:
+        user_group.admin = new_admin
+        if new_admin not in user_group.users.all():
+            user_group.users.add(new_admin)
+    else:
+        return Response(data={'detail': 'Only admin can remove others from the group'}, status=403)
+
+    return Response(data=UserGroupSerializer(user_group).data, status=200)
+
+
+@swagger_auto_schema(method='DELETE', responses={'200': UserGroupSerializer})
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def remove_from_group(request: Request, user_group_id: int, user_to_remove_id: int, *args, **kwargs):
+    user_group: UserGroup = UserGroup.objects.filter(id=user_group_id).first()
+    if not user_group:
+        return Response(data={'detail': 'User group not found'}, status=404)
+
+    user_to_remove = User.objects.filter(id=user_to_remove_id).first()
+    if not user_to_remove:
+        return Response(data={'detail': 'User not found'}, status=404)
+
+    if user_group.name == ADMIN_GROUP_NAME:
+        if user_to_remove == user_group.admin:
+            return Response(data={'detail': 'It is impossible ro remove super admin from the admin group'}, status=403)
+        if not is_super_admin(request.user):
+            return Response(data={'detail': 'Only super admin can remove from admin group'}, status=403)
+
+    if is_admin(request.user) or request.user == user_group.admin:
+        user_group.users.remove(user_to_remove)
+        if user_to_remove == user_group.admin:
+            user_group.admin = request.user
+            user_group.save()
+            if request.user not in user_group.users.all():
+                user_group.users.add(request.user)
+    else:
+        return Response(data={'detail': 'Only admin can remove others from the group'}, status=403)
 
     return Response(data=UserGroupSerializer(user_group).data, status=200)
