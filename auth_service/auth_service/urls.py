@@ -28,5 +28,5 @@ urlpatterns = [
     path('invites/', get_all_created_invitations, name='Get all invited which user has made'),
     path('invites/<str:secret_key>/', GetByInviteView.as_view({'get': 'retrieve'}), name='Get info about invite'),
     path('invites/<str:secret_key>/commit/', ConfirmInviteView.as_view(), name='Accept the invite'),
-    path('auth_user/', get_user_info, name='Get user by token'),
+    path('auth-user/', get_user_info, name='Get user by token'),
 ]

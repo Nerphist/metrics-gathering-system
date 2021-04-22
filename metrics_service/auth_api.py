@@ -24,6 +24,6 @@ def get_user(user_id: int) -> User:
 
 
 def auth_user(headers: Dict[str, str]) -> bool:
-    response = requests.get(url=f'http://{AUTH_API_URL}/auth_user/',
+    response = requests.get(url=f'http://{AUTH_API_URL}/auth-user/',
                             headers={k.capitalize(): v for k, v in headers.items()})
     return response.status_code == 200
