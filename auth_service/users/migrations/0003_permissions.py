@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('users', '0002_invitations'),
     ]
@@ -24,7 +23,9 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=255, unique=True)),
-                ('admin', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='controlled_group', to=settings.AUTH_USER_MODEL)),
+                ('admin',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='controlled_groups',
+                                   to=settings.AUTH_USER_MODEL)),
                 ('users', models.ManyToManyField(related_name='user_groups', to=settings.AUTH_USER_MODEL)),
             ],
             options={

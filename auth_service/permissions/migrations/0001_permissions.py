@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -22,7 +21,8 @@ class Migration(migrations.Migration):
                 ('entity_type', models.CharField(db_index=True, max_length=255)),
                 ('entity_id', models.IntegerField()),
                 ('permission_set', models.JSONField(default=list)),
-                ('user_group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.usergroup')),
+                ('user_group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.usergroup',
+                                                 related_name='permission_groups')),
             ],
             options={
                 'index_together': {('entity_type', 'entity_id')},

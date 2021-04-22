@@ -24,6 +24,7 @@ from rest_framework_simplejwt.views import token_refresh
 from auth_service.settings import ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_GROUP_NAME
 from users.models import UserGroup, User
 from users.urls import urlpatterns as user_urls
+from permissions.urls import urlpatterns as permission_urls
 from users.views import LoginView
 
 
@@ -58,4 +59,5 @@ urlpatterns = [
     path('token/refresh/', token_refresh, name='Token refresh'),
     path('login/', LoginView.as_view(), name='Login'),
     url(r'^users/', include(user_urls)),
+    url(r'^permissions/', include(permission_urls)),
 ]
