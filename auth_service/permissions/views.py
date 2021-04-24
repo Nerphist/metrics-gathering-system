@@ -171,7 +171,7 @@ def make_permissions_tree(user: User, structure, for_add=False):
     return tree
 
 
-def _can_add_permissions(user: User, entity_id: int, entity_type: str, action_set: Set[str], structure):
+def _can_change_permissions(user: User, entity_id: int, entity_type: str, action_set: Set[str], structure):
     if is_admin(user):
         return True
 
@@ -236,7 +236,7 @@ class PermissionsListView(APIView):
 
     @swagger_auto_schema(request_body=AddPermissionsRequestSerializer,
                          responses={'200': GetPermissionsResponseSerializer})
-    def post(self, request: Request, *args, **kwargs):
+    def put(self, request: Request, *args, **kwargs):
         serializer = AddPermissionsRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -273,7 +273,7 @@ class PermissionsListView(APIView):
         permission: PermissionGroup = user_group.permission_groups.get_or_create(entity_id=entity_id,
                                                                                  entity_type=entity_type)[0]
 
-        if _can_add_permissions(request.user, entity_type, entity_id, action_set, structure):
+        if _can_change_permissions(request.user, entity_type, entity_id, action_set, structure):
             permission_set = set(permission.permission_set)
             permission_set.update(set(action_set))
             permission.permission_set = list(permission_set)
