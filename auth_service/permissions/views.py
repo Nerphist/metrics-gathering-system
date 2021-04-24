@@ -33,7 +33,7 @@ def _get_permissions_for_user_group(user_group, init_permissions=None) -> Dict[s
     return init_permissions
 
 
-def make_permissions_tree(user: User, structure):
+def make_permissions_tree(user: User, structure, for_add=False):
     children_dict = {
         PermissionGroup.EntityTypes.building.name: PermissionGroup.EntityTypes.floor.name,
         PermissionGroup.EntityTypes.floor.name: PermissionGroup.EntityTypes.room.name,
@@ -55,7 +55,11 @@ def make_permissions_tree(user: User, structure):
         }
         for building_id, floors in structure.items()}
 
-    user_groups = user.user_groups.all()
+    if for_add:
+        user_groups = user.controlled_groups.all()
+    else:
+        user_groups = user.user_groups.all()
+
     permission_groups = [permission_group for user_group in user_groups for permission_group in
                          user_group.permission_groups.all()]
 
@@ -170,6 +174,42 @@ def make_permissions_tree(user: User, structure):
 def _can_add_permissions(user: User, entity_id: int, entity_type: str, action_set: Set[str], structure):
     if is_admin(user):
         return True
+
+    permission_tree = make_permissions_tree(user, structure, for_add=True)
+
+    if entity_type == 'building':
+        permissions = permission_tree[entity_id]['permissions']
+        if action_set.issubset(set(permissions)):
+            return True
+
+    elif entity_type == 'floor':
+        for _, building in permission_tree.items():
+            for floor_id, floor in building['floor'].items():
+                if floor_id == entity_id:
+                    permissions = floor['permissions']
+                    if action_set.issubset(set(permissions)):
+                        return True
+
+    elif entity_type == 'room':
+        for _, building in permission_tree.items():
+            for _, floor in building['floor'].items():
+                for room_id, room in floor['room'].items():
+                    if room_id == entity_id:
+                        permissions = room['permissions']
+                        if action_set.issubset(set(permissions)):
+                            return True
+
+    elif entity_type == 'device':
+        for _, building in permission_tree.items():
+            for _, floor in building['floor'].items():
+                for _, room in floor['room'].items():
+                    for device_id, device in room['device'].items():
+                        if device_id == entity_id:
+                            permissions = device['permissions']
+                            if action_set.issubset(set(permissions)):
+                                return True
+
+    return False
 
 
 @permission_classes([IsAuthenticated])
