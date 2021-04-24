@@ -133,7 +133,7 @@ def make_permissions_tree(user: User, structure):
             for floor_id, rooms in floors[PermissionGroup.EntityTypes.floor.name].items():
                 if room_id in rooms[PermissionGroup.EntityTypes.room.name]:
                     needed_tree = tree[building_id][PermissionGroup.EntityTypes.floor.name][floor_id][
-                        PermissionGroup.EntityTypes.room.name][room_id]
+                        PermissionGroup.EntityTypes.room.name]
         for building_id, floors in structure.items():
             for floor_id, rooms in floors.items():
                 if str(room_id) in rooms:
