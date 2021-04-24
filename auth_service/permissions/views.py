@@ -222,13 +222,6 @@ class PermissionsListView(APIView):
         else:
             user = request.user
 
-        # user_groups = user.user_groups.all()
-        #
-        # permissions = {str(entity): {} for entity in PermissionGroup.EntityTypes.__members__}
-        #
-        # for user_group in user_groups:
-        #     _get_permissions_for_user_group(user_group, permissions)
-
         structure = get_structure()
         permissions = make_permissions_tree(user, structure)
 
@@ -274,9 +267,7 @@ class PermissionsListView(APIView):
                                                                                  entity_type=entity_type)[0]
 
         if _can_change_permissions(request.user, entity_type, entity_id, action_set, structure):
-            permission_set = set(permission.permission_set)
-            permission_set.update(set(action_set))
-            permission.permission_set = list(permission_set)
+            permission.permission_set = list(action_set)
             permission.save()
 
             return Response(data=_get_permissions_for_user_group(user_group), status=status.HTTP_200_OK)
