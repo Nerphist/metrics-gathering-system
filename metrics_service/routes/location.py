@@ -10,6 +10,18 @@ from request_models.location import BuildingModel, AddBuildingModel, FloorModel,
 from routes import metrics_router
 
 
+@metrics_router.get("/structure/", status_code=200)
+async def get_full_structure(db: Session = Depends(get_db)):
+    buildings = db.query(Building).all()
+    return {
+        building.id: {
+            floor.id: {
+                room.id: [device.id for device in room.devices]
+                for room in floor.rooms}
+            for floor in building.floors}
+        for building in buildings}
+
+
 @metrics_router.get("/buildings/", status_code=200, response_model=List[BuildingModel])
 async def get_buildings(db: Session = Depends(get_db)):
     buildings = db.query(Building).all()

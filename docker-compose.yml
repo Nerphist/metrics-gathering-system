@@ -11,6 +11,8 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - POSTGRES_HOST=172.28.0.3
+      - METRICS_SERVICE_HOST=172.28.0.4
+      - METRICS_SERVICE_PORT=8002
       - DEBUG=${DEBUG}
     networks:
       web:
@@ -43,7 +45,8 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - POSTGRES_HOST=172.28.0.5
-      - AUTH_API_URL=172.28.0.2:8001
+      - AUTH_API_HOST=172.28.0.2
+      - AUTH_API_PORT=8001
       - DEBUG=${DEBUG}
     networks:
       web:

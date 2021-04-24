@@ -10,7 +10,7 @@ from utils import AbstractCreateUpdateModel
 class PermissionGroup(AbstractCreateUpdateModel):
     class Meta:
         index_together = [
-            ("entity_type", "entity_id"),
+            ("user_group_id", "entity_type", "entity_id"),
         ]
 
     class Action(Enum):
@@ -20,7 +20,7 @@ class PermissionGroup(AbstractCreateUpdateModel):
         delete = 4
 
     class EntityTypes(Enum):
-        location_group = 1
+        # location_group = 1
         building = 2
         floor = 3
         room = 4

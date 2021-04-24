@@ -6,15 +6,7 @@ from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_l
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User, Invite, UserGroup
-
-
-class DefaultSerializer(serializers.Serializer):
-
-    def update(self, instance, validated_data):
-        super(self.__class__, self).update(instance, validated_data)
-
-    def create(self, validated_data):
-        super(self.__class__, self).create(validated_data)
+from utils import DefaultSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):

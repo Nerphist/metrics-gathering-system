@@ -4,7 +4,9 @@ from typing import Dict
 
 import requests
 
-AUTH_API_URL = environ.get('AUTH_API_URL', 'localhost:8001')
+AUTH_API_HOST = environ.get('AUTH_API_HOST', 'localhost')
+AUTH_API_PORT = environ.get('AUTH_API_PORT', '8001')
+AUTH_API_URL = f'http://{AUTH_API_HOST}:{AUTH_API_PORT}'
 
 
 @dataclass
@@ -16,7 +18,7 @@ class User:
 
 
 def get_user(user_id: int) -> User:
-    response = requests.get(url=f'http://{AUTH_API_URL}/users/{user_id}/')
+    response = requests.get(url=f'{AUTH_API_URL}/users/{user_id}/')
     if response.status_code == 404:
         return None
     user = User(**response.json())
@@ -24,6 +26,6 @@ def get_user(user_id: int) -> User:
 
 
 def auth_user(headers: Dict[str, str]) -> bool:
-    response = requests.get(url=f'http://{AUTH_API_URL}/auth-user/',
+    response = requests.get(url=f'{AUTH_API_URL}/auth-user/',
                             headers={k.capitalize(): v for k, v in headers.items()})
     return response.status_code == 200

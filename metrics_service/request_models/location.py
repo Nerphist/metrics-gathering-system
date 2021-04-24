@@ -4,9 +4,13 @@ from pydantic.main import BaseModel
 from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 from models.location import Location, Building, Floor, Room
+from request_models.metrics import DeviceModel
 
 LocationModel = sqlalchemy_to_pydantic(Location)
-RoomModel = sqlalchemy_to_pydantic(Room)
+
+
+class RoomModel(sqlalchemy_to_pydantic(Room)):
+    devices: List[DeviceModel]
 
 
 class FloorModel(sqlalchemy_to_pydantic(Floor)):
