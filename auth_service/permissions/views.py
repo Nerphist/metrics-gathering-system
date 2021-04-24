@@ -1,3 +1,4 @@
+from itertools import groupby
 from typing import Set, Dict, List
 
 from drf_yasg.utils import swagger_auto_schema
@@ -60,16 +61,29 @@ def make_permissions_tree(user: User, structure, for_add=False):
     else:
         user_groups = user.user_groups.all()
 
-    permission_groups = [permission_group for user_group in user_groups for permission_group in
-                         user_group.permission_groups.all()]
+    initial_permission_groups = [permission_group for user_group in user_groups for permission_group in
+                                 user_group.permission_groups.all()]
 
-    building_permissions = [permission_group for permission_group in permission_groups if
+    combined_permission_groups = []
+    permission_groups_dict = groupby(initial_permission_groups, lambda x: (x.entity_id, x.entity_type))
+    for key, group in permission_groups_dict:
+        group = list(group)
+        if len(group) == 1:
+            combined_permission_groups.append(group[0])
+        else:
+            combined_permission_set = set()
+            for permission in group:
+                combined_permission_set.update(set(permission.permission_set))
+            group[0].permission_set = list(combined_permission_set)
+            combined_permission_groups.append(group[0])
+
+    building_permissions = [permission_group for permission_group in combined_permission_groups if
                             permission_group.entity_type == PermissionGroup.EntityTypes.building.name]
-    floor_permissions = [permission_group for permission_group in permission_groups if
+    floor_permissions = [permission_group for permission_group in combined_permission_groups if
                          permission_group.entity_type == PermissionGroup.EntityTypes.floor.name]
-    room_permissions = [permission_group for permission_group in permission_groups if
+    room_permissions = [permission_group for permission_group in combined_permission_groups if
                         permission_group.entity_type == PermissionGroup.EntityTypes.room.name]
-    device_permissions = [permission_group for permission_group in permission_groups if
+    device_permissions = [permission_group for permission_group in combined_permission_groups if
                           permission_group.entity_type == PermissionGroup.EntityTypes.device.name]
 
     def _fill_for_children(entity_type: str, permission_set: List[str], sub_structure, sub_tree):
