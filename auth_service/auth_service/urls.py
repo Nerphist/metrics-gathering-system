@@ -25,7 +25,7 @@ from auth_service.settings import ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_GROUP_NAME
 from users.models import UserGroup, User
 from users.urls import urlpatterns as user_urls
 from permissions.urls import urlpatterns as permission_urls
-from users.views import LoginView
+from users.views import LoginView, LogoutView
 
 
 def create_admin():
@@ -58,6 +58,7 @@ urlpatterns = [
     url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('token/refresh/', token_refresh, name='Token refresh'),
     path('login/', LoginView.as_view(), name='Login'),
+    path('logout/', LogoutView.as_view(), name='Logout'),
     url(r'^users/', include(user_urls)),
     url(r'^permissions/', include(permission_urls)),
 ]

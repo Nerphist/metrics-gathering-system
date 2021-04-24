@@ -4,7 +4,7 @@ from users.views import *
 
 urlpatterns = [
     path('', GetAllUsersView.as_view({'get': 'list'}, name='Get all users')),
-    path('<int:user_id>/', GetUserView.as_view({'get': 'retrieve'}, name='Get user')),
+    path('<int:user_id>/', SingleUserView.as_view(), name='Get user'),
     path('auth-user/', get_user_info, name='Get user by token'),
     path('add-user/', add_user, name='Add user'),
 
