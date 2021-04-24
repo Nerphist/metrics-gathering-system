@@ -112,7 +112,3 @@ class SwitchUserGroupAdminSerializer(DefaultSerializer):
 
 class UserIdQuerySerializer(DefaultSerializer):
     user_id = serializers.IntegerField(required=False)
-
-
-class LogoutRequestSerializer(DefaultSerializer):
-    refresh_token = serializers.CharField(required=True)

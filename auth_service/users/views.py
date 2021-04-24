@@ -18,14 +18,14 @@ from permissions.permissions import is_admin, is_super_admin
 from users.models import User, Invite, UserGroup
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer, \
-    PatchUserSerializer, UserIdQuerySerializer, LogoutRequestSerializer
+    PatchUserSerializer, UserIdQuerySerializer
 from users.utils import generate_random_email, generate_random_password
 
 
 @permission_classes([IsAuthenticated])
 class LogoutView(APIView):
 
-    @swagger_auto_schema(request_body=LogoutRequestSerializer)
+    @swagger_auto_schema()
     def post(self, request):
         for token in request.user.outstandingtoken_set.all():
             BlacklistedToken.objects.get_or_create(token=token)
