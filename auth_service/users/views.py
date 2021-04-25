@@ -14,7 +14,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.views import TokenViewBase
 
 from auth_service.settings import ADMIN_GROUP_NAME
-from permissions.permissions import is_admin, is_super_admin
+from permissions.permissions import is_admin, is_super_admin, ServerApiKeyAuthorized
 from users.models import User, Invite, UserGroup
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer, \
@@ -33,7 +33,7 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated | ServerApiKeyAuthorized])
 class SingleUserView(APIView):
 
     @swagger_auto_schema(responses={'200': UserSerializer})
