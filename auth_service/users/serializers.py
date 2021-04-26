@@ -9,10 +9,18 @@ from users.models import User, Invite, UserGroup, ContactInfo
 from utils import DefaultSerializer
 
 
+class ContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInfo
+        fields = ('id', 'created', 'updated', 'user_id', 'name', 'type', 'value', 'notes')
+
+
 class UserSerializer(serializers.ModelSerializer):
+    contact_infos = ContactInfoSerializer(many=True)
+
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email', 'password', 'first_name', 'last_name')
+        fields = ('id', 'created', 'updated', 'email', 'password', 'first_name', 'last_name', 'contact_infos')
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate_password(self, value: str) -> str:
@@ -23,12 +31,6 @@ class UserPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'first_name', 'last_name')
-
-
-class ContactInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ContactInfo
-        fields = ('id', 'created', 'updated', 'user_id', 'name', 'type', 'value', 'notes')
 
 
 class AddContactInfoSerializer(serializers.ModelSerializer):

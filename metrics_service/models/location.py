@@ -11,6 +11,7 @@ class Location(Base):
     name = Column(String(255), unique=True)
     longitude = Column(String(255))
     latitude = Column(String(255))
+    buildings = relationship("Building", backref="location")
     __tableargs__ = (UniqueConstraint('longitude', 'latitude', name='_coordinates_uc'),)
 
 
@@ -19,17 +20,24 @@ class ResponsibleUser(Base):
 
     user_id = Column(Integer)
     name = Column(String(255))
+    building_id = Column(Integer, ForeignKey('buildings.id'))
 
 
 class Building(Base):
     __tablename__ = 'buildings'
 
     location_id = Column(Integer, ForeignKey('locations.id', ondelete='CASCADE'))
-    location = relationship(Location)
     floors = relationship("Floor", backref="building")
     responsible_users = relationship("ResponsibleUser", backref="building")
+
+    name = Column(String)
+    description = Column(String)
+
     construction_year = Column(Integer)
     last_capital_repair_year = Column(Integer)
+    building_index = Column(String)
+    address = Column(String)
+    building_type = Column(String, index=True)
 
 
 class Floor(Base):

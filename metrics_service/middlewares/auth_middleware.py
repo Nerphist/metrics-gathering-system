@@ -13,7 +13,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         headers = dict(request.headers)
 
-        if headers.get('server-api-key') == SERVER_API_KEY:
+        if headers.get('Server-Api-Key') == SERVER_API_KEY:
             return await call_next(request)
 
         if auth_user(headers):

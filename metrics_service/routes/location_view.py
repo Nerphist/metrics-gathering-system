@@ -4,9 +4,11 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from auth_api import get_user
 from db import get_db
-from models.location import Building, Location, Floor, Room
-from request_models.location import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, AddRoomModel
+from models.location import Building, Location, Floor, Room, ResponsibleUser
+from request_models.location_requests import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, \
+    AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel
 from routes import metrics_router
 
 
@@ -22,17 +24,43 @@ async def get_full_structure(db: Session = Depends(get_db)):
         for building in buildings}
 
 
+@metrics_router.get("/locations/", status_code=200, response_model=List[LocationModel])
+async def get_locations(db: Session = Depends(get_db)):
+    locations = db.query(Location).all()
+    return [LocationModel.from_orm(b) for b in locations]
+
+
+@metrics_router.post("/locations/", status_code=201, response_model=LocationModel)
+async def add_location(body: AddLocationModel, db: Session = Depends(get_db)):
+    location = Location(name=body.name, latitude=body.latitude, longitude=body.longitude)
+    db.add(location)
+    try:
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='Location already exists', status_code=400)
+    return LocationModel.from_orm(location)
+
+
+@metrics_router.delete("/locations/{location_id}/", status_code=200)
+async def remove_location(location_id: int, db: Session = Depends(get_db)):
+    db.query(Location).filter_by(id=location_id).delete()
+    db.commit()
+    return ""
+
+
 @metrics_router.get("/buildings/", status_code=200, response_model=List[BuildingModel])
 async def get_buildings(db: Session = Depends(get_db)):
-    buildings = db.query(Building).all()
-    return [BuildingModel.from_orm(b) for b in buildings]
+    building_models = db.query(Building).all()
+    buildings = [BuildingModel.from_orm(b) for b in building_models]
+    for index, building in enumerate(building_models):
+        for user in building.responsible_users:
+            user.user = get_user(user.user_id)
+    return buildings
 
 
 @metrics_router.post("/buildings/", status_code=201, response_model=BuildingModel)
 async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
-    location = Location(name=body.name, latitude=body.latitude, longitude=body.longitude)
-    building = Building()
-    building.location = location
+    building = Building(**body.dict())
     db.add(building)
     try:
         db.commit()
@@ -44,6 +72,30 @@ async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
 @metrics_router.delete("/buildings/{building_id}/", status_code=200)
 async def remove_building(building_id: int, db: Session = Depends(get_db)):
     db.query(Building).filter_by(id=building_id).delete()
+    db.commit()
+    return ""
+
+
+@metrics_router.get("/responsible_users/", status_code=200, response_model=List[ResponsibleUserModel])
+async def get_responsible_users(db: Session = Depends(get_db)):
+    responsible_user_models = db.query(ResponsibleUser).all()
+
+    return [{'id': user.id, 'name': user.name, 'user': get_user(user.user_id)} for user in responsible_user_models]
+
+
+@metrics_router.post("/responsible_users/", status_code=201, response_model=ResponsibleUserModel)
+async def add_responsible_user(body: AddResponsibleUserModel, db: Session = Depends(get_db)):
+    if not (user := get_user(body.user_id)):
+        raise HTTPException(detail='User does not exist', status_code=400)
+    responsible_user = ResponsibleUser(**body.dict())
+    db.add(responsible_user)
+    db.commit()
+    return {'id': responsible_user.id, 'name': responsible_user.name, 'user': user}
+
+
+@metrics_router.delete("/responsible_users/{responsible_user_id}/", status_code=200)
+async def remove_responsible_user(responsible_user_id: int, db: Session = Depends(get_db)):
+    db.query(ResponsibleUser).filter_by(id=responsible_user_id).delete()
     db.commit()
     return ""
 

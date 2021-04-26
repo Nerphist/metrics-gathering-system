@@ -38,7 +38,7 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '1234@gmail.com')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '1234')
 ADMIN_GROUP_NAME = os.environ.get('ADMIN_GROUP_NAME', 'Administration')
 
-SERVER_API_KEY = os.environ.get('SERVER_API_KEY', '1234')
+SERVER_API_KEY = os.environ.get('SERVER_API_KEY', '123')
 
 METRICS_SERVICE_HOST = os.environ.get('METRICS_SERVICE_HOST', '127.0.0.1')
 METRICS_SERVICE_PORT = os.environ.get('METRICS_SERVICE_PORT', '8002')

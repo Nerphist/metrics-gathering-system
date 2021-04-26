@@ -14,7 +14,7 @@ class IsAdminPermission(BasePermission):
 class ServerApiKeyAuthorized(BasePermission):
 
     def has_permission(self, request, view):
-        api_key = request.headers.get('server-api-key')
+        api_key = request.headers.get('Server-Api-Key')
         if api_key == SERVER_API_KEY:
             return True
         return False

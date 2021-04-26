@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from models.metrics import Reading, Device
-from request_models.metrics import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel, RecognizeDeviceModel
+from request_models.metrics_requests import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel, RecognizeDeviceModel
 from routes import metrics_router
 
 
