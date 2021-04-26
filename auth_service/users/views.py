@@ -272,7 +272,7 @@ def add_user(request: Request, *args, **kwargs):
 
     email = generate_random_email()
     password = make_password(generate_random_password())
-    contact_info = serializer.validated_data.pop('contact_info')
+    contact_info = serializer.validated_data.get('contact_info')
     user = User.objects.create_user(email=email, password=password,
                                     first_name=serializer.validated_data.get('first_name'),
                                     last_name=serializer.validated_data.get('last_name'))
