@@ -15,10 +15,10 @@ from rest_framework_simplejwt.views import TokenViewBase
 
 from auth_service.settings import ADMIN_GROUP_NAME
 from permissions.permissions import is_admin, is_super_admin, ServerApiKeyAuthorized
-from users.models import User, Invite, UserGroup
+from users.models import User, Invite, UserGroup, ContactInfo
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer, \
-    PatchUserSerializer, UserIdQuerySerializer
+    PatchUserSerializer, UserIdQuerySerializer, ContactInfoSerializer, AddContactInfoSerializer
 from users.utils import generate_random_email, generate_random_password
 
 
@@ -184,6 +184,69 @@ class UserGroupRetrieveView(APIView):
         return Response(data={})
 
 
+@permission_classes([IsAuthenticated])
+class ContactInfoListView(APIView):
+
+    @swagger_auto_schema(request_body=AddContactInfoSerializer, responses={'201': ContactInfoSerializer})
+    def post(self, request: Request, *args, **kwargs):
+
+        serializer = AddContactInfoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            contact_info = ContactInfo.objects.create(
+                name=serializer.validated_data.get('name'),
+                type=serializer.validated_data.get('type'),
+                value=serializer.validated_data.get('name'),
+                notes=serializer.validated_data.get('notes'),
+                user=request.user,
+            )
+        except IntegrityError:
+            return Response(data={'detail': 'Wrong contact info'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(data=ContactInfoSerializer(contact_info).data, status=status.HTTP_201_CREATED)
+
+    @swagger_auto_schema(responses={'200': ContactInfoSerializer(many=True)}, query_serializer=UserIdQuerySerializer)
+    def get(self, request: Request, *args, **kwargs):
+        if user_id := int(request.query_params.get('user_id', 0)):
+            user = User.objects.filter(id=user_id).first()
+            if not user:
+                return Response(data={'detail': 'Wrong user_id'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            user = request.user
+
+        contact_infos = user.contact_infos.all()
+        return Response(data=[ContactInfoSerializer(contact_info).data for contact_info in contact_infos])
+
+
+@permission_classes([IsAuthenticated])
+class ContactInfoRetrieveView(APIView):
+
+    @swagger_auto_schema(responses={'200': ContactInfoSerializer})
+    def get(self, request: Request, contact_info_id: int, *args, **kwargs):
+
+        contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
+        if not contact_info:
+            return Response(data={'detail': 'Contact info group not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not is_admin(request.user) and contact_info not in request.user.contact_infos.all():
+            return Response(data={'detail': 'User cannot view this contact info'}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(data=ContactInfoSerializer(contact_info).data)
+
+    @swagger_auto_schema()
+    def delete(self, request: Request, contact_info_id: int, *args, **kwargs):
+
+        contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
+        if not contact_info:
+            return Response(data={'detail': 'Contact info not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not is_admin(request.user) and contact_info.admin != request.user:
+            return Response(data={'detail': 'User cannot delete this contact info'}, status=status.HTTP_403_FORBIDDEN)
+
+        contact_info.delete()
+
+        return Response(data={})
+
+
 @swagger_auto_schema(method='GET', responses={'200': UserSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -209,7 +272,14 @@ def add_user(request: Request, *args, **kwargs):
 
     email = generate_random_email()
     password = make_password(generate_random_password())
-    user = User.objects.create_user(email=email, password=password, **serializer.data)
+    contact_info = serializer.validated_data.pop('contact_info')
+    user = User.objects.create_user(email=email, password=password,
+                                    first_name=serializer.validated_data.get('first_name'),
+                                    last_name=serializer.validated_data.get('last_name'))
+
+    if contact_info:
+        contact_info['user_id'] = user.id
+        ContactInfo.objects.create(**contact_info)
 
     invite = Invite.objects.create(invitee=user, inviter=request.user)
     return Response(data=InviteSerializer(invite).data, status=status.HTTP_201_CREATED)

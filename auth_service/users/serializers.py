@@ -5,7 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User, Invite, UserGroup
+from users.models import User, Invite, UserGroup, ContactInfo
 from utils import DefaultSerializer
 
 
@@ -25,9 +25,28 @@ class UserPartSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name')
 
 
+class ContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInfo
+        fields = ('id', 'created', 'updated', 'user_id', 'name', 'type', 'value', 'notes')
+
+
+class AddContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInfo
+        fields = ('id', 'created', 'updated', 'name', 'type', 'value', 'notes')
+
+    def validate_type(self, value: str):
+        if value.lower() not in ContactInfo.Type.__members__:
+            return ContactInfo.Type.messenger.name
+
+        return value.lower()
+
+
 class AddUserSerializer(DefaultSerializer):
     first_name = serializers.CharField(max_length=255, required=True)
     last_name = serializers.CharField(max_length=255, required=True)
+    contact_info = AddContactInfoSerializer(required=False)
 
 
 class PatchUserSerializer(DefaultSerializer):

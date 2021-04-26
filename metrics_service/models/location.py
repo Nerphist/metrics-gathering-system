@@ -14,12 +14,22 @@ class Location(Base):
     __tableargs__ = (UniqueConstraint('longitude', 'latitude', name='_coordinates_uc'),)
 
 
+class ResponsibleUser(Base):
+    __tablename__ = 'responsible_users'
+
+    user_id = Column(Integer)
+    name = Column(String(255))
+
+
 class Building(Base):
     __tablename__ = 'buildings'
 
     location_id = Column(Integer, ForeignKey('locations.id', ondelete='CASCADE'))
     location = relationship(Location)
     floors = relationship("Floor", backref="building")
+    responsible_users = relationship("ResponsibleUser", backref="building")
+    construction_year = Column(Integer)
+    last_capital_repair_year = Column(Integer)
 
 
 class Floor(Base):
