@@ -69,7 +69,7 @@ class PatchUserSerializer(DefaultSerializer):
 
 class InviteSerializer(serializers.ModelSerializer):
     invitee = UserPartSerializer()
-    inviter = UserSerializer()
+    inviter = UserPartSerializer()
 
     class Meta:
         model = Invite
