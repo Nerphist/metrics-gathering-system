@@ -159,4 +159,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/user-photos/'
+
+MEDIA_ROOT = str(Path(__file__).parent.parent.absolute()) + '\\user-photos\\'

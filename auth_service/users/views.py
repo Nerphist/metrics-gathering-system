@@ -68,6 +68,7 @@ class SingleUserView(APIView):
         if 'photo' in request.FILES:
             photo_file = request.FILES['photo']
             user.photo = photo_file
+            print(user.photo.path)
         user.save()
         return Response(UserSerializer(user, context={'request': request}).data)
 
