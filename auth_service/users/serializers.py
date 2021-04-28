@@ -26,7 +26,10 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_photo_url(self, obj):
-        return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
+        if obj.photo:
+            return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
+        else:
+            return None
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
