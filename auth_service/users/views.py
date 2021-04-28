@@ -69,7 +69,7 @@ class SingleUserView(APIView):
             photo_file = request.FILES['photo']
             user.photo = photo_file
         user.save()
-        return Response(UserSerializer(user, context={'request': request}))
+        return Response(UserSerializer(user, context={'request': request}).data)
 
 
 @permission_classes([IsAuthenticated])
