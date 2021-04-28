@@ -17,11 +17,16 @@ class ContactInfoSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     contact_infos = ContactInfoSerializer(many=True)
+    photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email', 'password', 'first_name', 'last_name', 'contact_infos')
+        fields = ('id', 'created', 'updated', 'email',
+                  'password', 'first_name', 'last_name', 'contact_infos', 'photo_url')
         extra_kwargs = {'password': {'write_only': True}}
+
+    def get_photo_url(self, obj):
+        return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
@@ -104,7 +109,7 @@ class UserWithTokenSerializer(DefaultSerializer):
         data['refresh'] = str(refresh_token)
         data['access'] = str(refresh_token.access_token)
 
-        user_serializer = UserSerializer(user)
+        user_serializer = UserSerializer(user, context=self.context)
         data.update(user_serializer.data)
 
         return data

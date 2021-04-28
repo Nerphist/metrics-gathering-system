@@ -41,7 +41,8 @@ class SingleUserView(APIView):
         user = User.objects.filter(id=user_id).first()
         if not user:
             return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(UserSerializer(user).data)
+
+        return Response(UserSerializer(user, context={'request': request}).data)
 
     @swagger_auto_schema(request_body=PatchUserSerializer, responses={'200': UserSerializer})
     def patch(self, request: Request, user_id: int, *args, **kwargs):
@@ -63,9 +64,12 @@ class SingleUserView(APIView):
         user.last_name = serializer.validated_data.get('last_name', user.last_name)
         user.email = serializer.validated_data.get('email', user.email)
         user.password = serializer.validated_data.get('password', user.password)
-        user.save()
 
-        return Response(UserSerializer(user).data)
+        if 'photo' in request.FILES:
+            photo_file = request.FILES['photo']
+            user.photo = photo_file
+        user.save()
+        return Response(UserSerializer(user, context={'request': request}))
 
 
 @permission_classes([IsAuthenticated])

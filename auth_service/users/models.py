@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractCreateUpdateModel):
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=511)
     activated = models.BooleanField(default=False)
+    photo = models.ImageField(null=True, default=None)
 
     objects = UserManager()
 
