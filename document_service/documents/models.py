@@ -23,8 +23,7 @@ class SupplyContract(AbstractCreateUpdateModel):
     type = models.CharField(max_length=255, null=False)
     notes = models.CharField(max_length=255)
 
-    file = models.FileField(null=True, default=None)
+    file = models.FileField(null=False)
 
-    start_date = models.DateTimeField(default=None)
-    expiration_date = models.DateTimeField(default=None)
-
+    start_date = models.DateTimeField(null=True, default=None)
+    expiration_date = models.DateTimeField(null=True, default=None)

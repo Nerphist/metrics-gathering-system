@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_l
 from rest_framework_simplejwt.tokens import RefreshToken
 from hurry.filesize import size
 
-from documents.models import Document, DocumentationPart
+from documents.models import Document, DocumentationPart, SupplyContract
 from utils import DefaultSerializer
 
 
@@ -55,3 +55,29 @@ class AddDocumentationPartSerializer(DefaultSerializer):
 class ChangeDocumentationPartSerializer(DefaultSerializer):
     name = serializers.CharField(required=False)
     order = serializers.IntegerField(required=False)
+
+
+class SupplyContractSerializer(serializers.ModelSerializer, FileSerializer):
+    class Meta:
+        model = SupplyContract
+        fields = ('id', 'created', 'updated', 'name',
+                  'number', 'type', 'notes', 'start_date',
+                  'expiration_date', 'file_size', 'file_name', 'file_url')
+
+
+class AddSupplyContractSerializer(DefaultSerializer):
+    name = serializers.CharField(required=True)
+    number = serializers.IntegerField(required=False)
+    type = serializers.CharField(required=True)
+    notes = serializers.CharField(required=False)
+    start_date = serializers.DateTimeField(required=False)
+    expiration_date = serializers.DateTimeField(required=False)
+
+
+class ChangeSupplyContractSerializer(DefaultSerializer):
+    name = serializers.CharField(required=False)
+    number = serializers.IntegerField(required=False)
+    type = serializers.CharField(required=False)
+    notes = serializers.CharField(required=False)
+    start_date = serializers.DateTimeField(required=False)
+    expiration_date = serializers.DateTimeField(required=False)
