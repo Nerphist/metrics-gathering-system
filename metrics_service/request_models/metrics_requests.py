@@ -31,3 +31,13 @@ class AddDeviceModel(BaseModel):
     model_number: str = ''
     description: str = ''
     manufacture_date: datetime = datetime.utcnow()
+
+
+class ChangeDeviceModel(BaseModel):
+    name: str = None
+    type: str = None
+    serial: str = None
+    room_id: int = None
+    model_number: str = None
+    description: str = None
+    manufacture_date: datetime = None

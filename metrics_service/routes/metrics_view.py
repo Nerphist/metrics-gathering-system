@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from models.metrics import Reading, Device
-from request_models.metrics_requests import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel, RecognizeDeviceModel
+from permissions import is_admin_permission
+from request_models.metrics_requests import ReadingModel, AddReadingModel, DeviceModel, AddDeviceModel, \
+    RecognizeDeviceModel, ChangeDeviceModel
 from routes import metrics_router
 
 
@@ -14,6 +16,7 @@ async def get_readings(device_id: int = 0, db: Session = Depends(get_db)):
     readings = db.query(Reading)
     if device_id:
         readings = readings.filter_by(device_id=device_id)
+    readings = readings.all()
     return [ReadingModel.from_orm(r) for r in readings]
 
 
@@ -45,6 +48,7 @@ async def get_devices(room_id: int = 0, device_name: str = '', db: Session = Dep
         devices = devices.filter_by(room_id=room_id)
     if device_name:
         devices = devices.filter(Device.name.contains(device_name))
+    devices = devices.all()
     return [DeviceModel.from_orm(d) for d in devices]
 
 
@@ -55,6 +59,21 @@ async def add_device(body: AddDeviceModel, db: Session = Depends(get_db)):
                     manufacture_date=body.manufacture_date)
     db.add(device)
     db.commit()
+    return DeviceModel.from_orm(device)
+
+
+@metrics_router.patch("/devices/{device_id}", status_code=200, response_model=DeviceModel)
+async def patch_device(device_id: int, body: ChangeDeviceModel, db: Session = Depends(get_db),
+                       _=Depends(is_admin_permission)):
+    device = db.query(Device).filter_by(id=device_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(device, k, v)
+
+        db.add(device)
+        db.commit()
     return DeviceModel.from_orm(device)
 
 

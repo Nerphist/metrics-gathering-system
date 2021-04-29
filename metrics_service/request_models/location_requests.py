@@ -80,3 +80,32 @@ class AddFloorModel(BaseModel):
 class AddRoomModel(BaseModel):
     floor_id: int
     name: str
+
+
+class ChangeLocationModel(BaseModel):
+    name: str = None
+    latitude: int = None
+    longitude: int = None
+
+
+class ChangeBuildingModel(BaseModel):
+    name: str = None
+    description: str = None
+    address: str = None
+    building_index: str = None
+    building_type: str = None
+    last_capital_repair_year: int = None
+    construction_year: int = None
+
+
+class ChangeResponsibleUserModel(BaseModel):
+    building_id: int = None
+    name: str = None
+
+
+class ChangeFloorModel(BaseModel):
+    number: int = None
+
+
+class ChangeRoomModel(BaseModel):
+    name: str = None

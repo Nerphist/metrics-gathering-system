@@ -14,6 +14,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.views import TokenViewBase
 
 from auth_service.settings import ADMIN_GROUP_NAME
+from metrics_api import delete_metrics_user
 from permissions.permissions import is_admin, is_super_admin, ServerApiKeyAuthorized
 from users.models import User, Invite, UserGroup, ContactInfo
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
@@ -71,6 +72,23 @@ class SingleUserView(APIView):
             user.photo = photo_file
         user.save()
         return Response(UserSerializer(user, context={'request': request}).data)
+
+    @swagger_auto_schema(responses={'200': UserSerializer})
+    def delete(self, request: Request, user_id: int, *args, **kwargs):
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != user:
+            if not is_admin(request.user):
+                return Response(data={'detail': 'Only admin can do it'}, status=status.HTTP_403_FORBIDDEN)
+            elif not is_super_admin(request.user):
+                return Response(data={'detail': 'Only superadmin can delete other admins'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+        delete_metrics_user(dict(request.headers), user.id)
+        user.delete()
+        return Response(data={})
 
 
 @permission_classes([IsAuthenticated])

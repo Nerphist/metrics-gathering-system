@@ -9,7 +9,8 @@ from db import get_db
 from models.location import Building, Location, Floor, Room, ResponsibleUser
 from permissions import is_admin_permission
 from request_models.location_requests import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, \
-    AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel
+    AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel, ChangeRoomModel, \
+    ChangeFloorModel, ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel
 from routes import metrics_router
 
 
@@ -42,6 +43,21 @@ async def add_location(body: AddLocationModel, db: Session = Depends(get_db), _=
     return LocationModel.from_orm(location)
 
 
+@metrics_router.patch("/locations/{location_id}", status_code=200, response_model=LocationModel)
+async def patch_location(location_id: int, body: ChangeLocationModel, db: Session = Depends(get_db),
+                         _=Depends(is_admin_permission)):
+    location = db.query(Location).filter_by(id=location_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(location, k, v)
+
+        db.add(location)
+        db.commit()
+    return LocationModel.from_orm(location)
+
+
 @metrics_router.delete("/locations/{location_id}/", status_code=200)
 async def remove_location(location_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Location).filter_by(id=location_id).delete()
@@ -70,6 +86,21 @@ async def add_building(body: AddBuildingModel, db: Session = Depends(get_db), _=
     return BuildingModel.from_orm(building)
 
 
+@metrics_router.patch("/buildings/{building_id}", status_code=200, response_model=BuildingModel)
+async def patch_building(building_id: int, body: ChangeBuildingModel,
+                         db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    building = db.query(Building).filter_by(id=building_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(building, k, v)
+
+        db.add(building)
+        db.commit()
+    return BuildingModel.from_orm(building)
+
+
 @metrics_router.delete("/buildings/{building_id}/", status_code=200)
 async def remove_building(building_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Building).filter_by(id=building_id).delete()
@@ -95,10 +126,33 @@ async def add_responsible_user(body: AddResponsibleUserModel, db: Session = Depe
     return {'id': responsible_user.id, 'name': responsible_user.name, 'user': user}
 
 
+@metrics_router.patch("/responsible_users/{responsible_user_id}", status_code=200, response_model=ResponsibleUserModel)
+async def patch_responsible_user(responsible_user_id: int, body: ChangeResponsibleUserModel,
+                                 db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    responsible_user = db.query(ResponsibleUser).filter_by(id=responsible_user_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(responsible_user, k, v)
+
+        db.add(responsible_user)
+        db.commit()
+    return ResponsibleUserModel.from_orm(responsible_user)
+
+
 @metrics_router.delete("/responsible_users/{responsible_user_id}/", status_code=200)
 async def remove_responsible_user(responsible_user_id: int, db: Session = Depends(get_db),
                                   _=Depends(is_admin_permission)):
     db.query(ResponsibleUser).filter_by(id=responsible_user_id).delete()
+    db.commit()
+    return ""
+
+
+@metrics_router.delete("/responsible_users/users/{user_id}/", status_code=200)
+async def remove_responsible_user_by_user_id(user_id: int, db: Session = Depends(get_db),
+                                             _=Depends(is_admin_permission)):
+    db.query(ResponsibleUser).filter_by(user_id=user_id).delete()
     db.commit()
     return ""
 
@@ -119,6 +173,21 @@ async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depend
         db.commit()
     except IntegrityError:
         raise HTTPException(detail='Floor already exists', status_code=400)
+    return FloorModel.from_orm(floor)
+
+
+@metrics_router.patch("/floors/{floor_id}", status_code=200, response_model=FloorModel)
+async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depends(get_db),
+                      _=Depends(is_admin_permission)):
+    floor = db.query(Floor).filter_by(id=floor_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(floor, k, v)
+
+        db.add(floor)
+        db.commit()
     return FloorModel.from_orm(floor)
 
 
@@ -145,6 +214,21 @@ async def add_room(body: AddRoomModel, db: Session = Depends(get_db), _=Depends(
         db.commit()
     except IntegrityError:
         raise HTTPException(detail='Room already exists', status_code=400)
+    return RoomModel.from_orm(room)
+
+
+@metrics_router.patch("/rooms/{room_id}", status_code=200, response_model=RoomModel)
+async def patch_room(room_id: int, body: ChangeRoomModel, db: Session = Depends(get_db),
+                     _=Depends(is_admin_permission)):
+    room = db.query(Room).filter_by(id=room_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(room, k, v)
+
+        db.add(room)
+        db.commit()
     return RoomModel.from_orm(room)
 
 
