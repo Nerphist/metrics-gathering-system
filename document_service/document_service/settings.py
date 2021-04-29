@@ -33,8 +33,8 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 SERVER_API_KEY = os.environ.get('SERVER_API_KEY', '123')
 
-AUTH_SERVICE_HOST = os.environ.get('METRICS_SERVICE_HOST', '127.0.0.1')
-AUTH_SERVICE_PORT = os.environ.get('METRICS_SERVICE_PORT', '8001')
+AUTH_SERVICE_HOST = os.environ.get('AUTH_SERVICE_HOST', '127.0.0.1')
+AUTH_SERVICE_PORT = os.environ.get('AUTH_SERVICE_PORT', '8001')
 
 # custom settings end
 
