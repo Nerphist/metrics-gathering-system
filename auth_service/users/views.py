@@ -298,7 +298,7 @@ def add_user(request: Request, *args, **kwargs):
                                     first_name=serializer.validated_data.get('first_name'),
                                     last_name=serializer.validated_data.get('last_name'))
 
-    contact_infos = serializer.validated_data.get('contact_infos')
+    contact_infos = serializer.validated_data.get('contact_infos', [])
     for contact_info in contact_infos:
         contact_info['user_id'] = user.id
         ContactInfo.objects.create(**contact_info)
