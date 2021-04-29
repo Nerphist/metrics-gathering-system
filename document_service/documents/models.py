@@ -12,7 +12,7 @@ class Document(AbstractCreateUpdateModel):
 
 class DocumentationPart(AbstractCreateUpdateModel):
     name = models.CharField(max_length=255, null=False)
-    order = models.IntegerField(unique=True, db_index=True)
+    order = models.IntegerField(db_index=True)
 
     file = models.FileField(null=False)
 

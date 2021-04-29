@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_l
 from rest_framework_simplejwt.tokens import RefreshToken
 from hurry.filesize import size
 
-from documents.models import Document
+from documents.models import Document, DocumentationPart
 from utils import DefaultSerializer
 
 
@@ -39,3 +39,19 @@ class AddDocumentSerializer(DefaultSerializer):
 class ChangeDocumentSerializer(DefaultSerializer):
     name = serializers.CharField(required=False)
     type = serializers.CharField(required=False)
+
+
+class DocumentationPartSerializer(serializers.ModelSerializer, FileSerializer):
+    class Meta:
+        model = DocumentationPart
+        fields = ('id', 'created', 'updated', 'name', 'order', 'file_size', 'file_name', 'file_url')
+
+
+class AddDocumentationPartSerializer(DefaultSerializer):
+    name = serializers.CharField(required=True)
+    order = serializers.IntegerField(required=True)
+
+
+class ChangeDocumentationPartSerializer(DefaultSerializer):
+    name = serializers.CharField(required=False)
+    order = serializers.IntegerField(required=False)

@@ -6,4 +6,7 @@ urlpatterns = [
     path('', DocumentListView.as_view(), name='Get all documents'),
     path('<int:document_id>/', DocumentRetrieveView.as_view(), name='Get document'),
 
+    path('documentation/', DocumentationPartListView.as_view(), name='Get all documents'),
+    path('documentation/<int:documentation_part_id>/', DocumentationPartRetrieveView.as_view(), name='Get document'),
+
 ]

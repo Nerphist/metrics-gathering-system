@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=255)),
-                ('order', models.IntegerField(db_index=True, unique=True)),
+                ('order', models.IntegerField(db_index=True)),
                 ('file', models.FileField(upload_to='')),
             ],
             options={
