@@ -20,6 +20,7 @@ class UserModel(BaseModel):
     first_name: str
     last_name: str
     email: str
+    is_admin: bool
     contact_infos: List[ContactInfoModel]
 
 

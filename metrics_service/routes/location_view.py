@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from auth_api import get_user
 from db import get_db
 from models.location import Building, Location, Floor, Room, ResponsibleUser
+from permissions import is_admin_permission
 from request_models.location_requests import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, \
     AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel
 from routes import metrics_router
@@ -31,7 +32,7 @@ async def get_locations(db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/locations/", status_code=201, response_model=LocationModel)
-async def add_location(body: AddLocationModel, db: Session = Depends(get_db)):
+async def add_location(body: AddLocationModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     location = Location(name=body.name, latitude=body.latitude, longitude=body.longitude)
     db.add(location)
     try:
@@ -42,7 +43,7 @@ async def add_location(body: AddLocationModel, db: Session = Depends(get_db)):
 
 
 @metrics_router.delete("/locations/{location_id}/", status_code=200)
-async def remove_location(location_id: int, db: Session = Depends(get_db)):
+async def remove_location(location_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Location).filter_by(id=location_id).delete()
     db.commit()
     return ""
@@ -59,7 +60,7 @@ async def get_buildings(db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/buildings/", status_code=201, response_model=BuildingModel)
-async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
+async def add_building(body: AddBuildingModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     building = Building(**body.dict())
     db.add(building)
     try:
@@ -70,7 +71,7 @@ async def add_building(body: AddBuildingModel, db: Session = Depends(get_db)):
 
 
 @metrics_router.delete("/buildings/{building_id}/", status_code=200)
-async def remove_building(building_id: int, db: Session = Depends(get_db)):
+async def remove_building(building_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Building).filter_by(id=building_id).delete()
     db.commit()
     return ""
@@ -84,7 +85,8 @@ async def get_responsible_users(db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/responsible_users/", status_code=201, response_model=ResponsibleUserModel)
-async def add_responsible_user(body: AddResponsibleUserModel, db: Session = Depends(get_db)):
+async def add_responsible_user(body: AddResponsibleUserModel, db: Session = Depends(get_db),
+                               _=Depends(is_admin_permission)):
     if not (user := get_user(body.user_id)):
         raise HTTPException(detail='User does not exist', status_code=400)
     responsible_user = ResponsibleUser(**body.dict())
@@ -94,7 +96,8 @@ async def add_responsible_user(body: AddResponsibleUserModel, db: Session = Depe
 
 
 @metrics_router.delete("/responsible_users/{responsible_user_id}/", status_code=200)
-async def remove_responsible_user(responsible_user_id: int, db: Session = Depends(get_db)):
+async def remove_responsible_user(responsible_user_id: int, db: Session = Depends(get_db),
+                                  _=Depends(is_admin_permission)):
     db.query(ResponsibleUser).filter_by(id=responsible_user_id).delete()
     db.commit()
     return ""
@@ -109,7 +112,7 @@ async def get_floors(building_id: int = 0, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/floors/", status_code=201, response_model=FloorModel)
-async def add_floor(body: AddFloorModel, db: Session = Depends(get_db)):
+async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     floor = Floor(building_id=body.building_id, number=body.number)
     db.add(floor)
     try:
@@ -120,7 +123,7 @@ async def add_floor(body: AddFloorModel, db: Session = Depends(get_db)):
 
 
 @metrics_router.delete("/floors/{floor_id}/", status_code=200)
-async def remove_floor(floor_id: int, db: Session = Depends(get_db)):
+async def remove_floor(floor_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Floor).filter_by(id=floor_id).delete()
     db.commit()
     return ""
@@ -135,7 +138,7 @@ async def get_rooms(floor_id: int = 0, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/rooms/", status_code=201, response_model=RoomModel)
-async def add_room(body: AddRoomModel, db: Session = Depends(get_db)):
+async def add_room(body: AddRoomModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     room = Room(floor_id=body.floor_id, name=body.name)
     db.add(room)
     try:
@@ -146,14 +149,7 @@ async def add_room(body: AddRoomModel, db: Session = Depends(get_db)):
 
 
 @metrics_router.delete("/rooms/{room_id}/", status_code=200)
-async def remove_room(room_id: int, db: Session = Depends(get_db)):
-    db.query(Room).filter_by(id=room_id).delete()
-    db.commit()
-    return ""
-
-
-@metrics_router.delete("/rooms/{room_id}/", status_code=200)
-async def remove_room(room_id: int, db: Session = Depends(get_db)):
+async def remove_room(room_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Room).filter_by(id=room_id).delete()
     db.commit()
     return ""

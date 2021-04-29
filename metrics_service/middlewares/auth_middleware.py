@@ -19,4 +19,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if auth_user(headers):
             return await call_next(request)
 
-        return JSONResponse(content={'detail': 'Authorization Error'})
+        return JSONResponse(content={'detail': 'Authorization Error'}, status_code=401)
