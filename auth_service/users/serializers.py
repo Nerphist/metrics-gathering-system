@@ -61,7 +61,7 @@ class AddContactInfoSerializer(serializers.ModelSerializer):
 class AddUserSerializer(DefaultSerializer):
     first_name = serializers.CharField(max_length=255, required=True)
     last_name = serializers.CharField(max_length=255, required=True)
-    contact_info = AddContactInfoSerializer(required=False)
+    contact_infos = AddContactInfoSerializer(many=True, required=False)
 
 
 class PatchUserSerializer(DefaultSerializer):

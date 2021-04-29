@@ -295,14 +295,20 @@ def add_user(request: Request, *args, **kwargs):
 
     email = generate_random_email()
     password = make_password(generate_random_password())
-    contact_info = serializer.validated_data.get('contact_info')
     user = User.objects.create_user(email=email, password=password,
                                     first_name=serializer.validated_data.get('first_name'),
                                     last_name=serializer.validated_data.get('last_name'))
 
-    if contact_info:
+    contact_infos = serializer.validated_data.get('contact_infos')
+    for contact_info in contact_infos:
         contact_info['user_id'] = user.id
         ContactInfo.objects.create(**contact_info)
+
+    if 'photo' in request.FILES:
+        photo_file = request.FILES['photo']
+        photo_file.name = f'{user.id}---{photo_file.name}'
+        user.photo = photo_file
+        user.save()
 
     invite = Invite.objects.create(invitee=user, inviter=request.user)
     return Response(data=InviteSerializer(invite).data, status=status.HTTP_201_CREATED)
