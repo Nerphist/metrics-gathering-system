@@ -23,7 +23,6 @@ def get_user(user_id: int) -> UserModel:
 
 
 def auth_user(headers: Dict[str, str]) -> bool:
-    return True
     if os.environ.get('DEBUG') == 'True':
         return True
     response = requests.get(url=f'{AUTH_API_URL}/users/auth-user/',
