@@ -66,8 +66,7 @@ class SingleUserView(APIView):
         user.email = serializer.validated_data.get('email', user.email)
         user.password = serializer.validated_data.get('password', user.password)
 
-        if 'photo' in request.FILES:
-            photo_file = request.FILES['photo']
+        if photo_file := request.FILES.get('photo'):
             photo_file.name = f'{user_id}---{photo_file.name}'
             user.photo = photo_file
         user.save()
@@ -304,8 +303,7 @@ def add_user(request: Request, *args, **kwargs):
         contact_info['user_id'] = user.id
         ContactInfo.objects.create(**contact_info)
 
-    if 'photo' in request.FILES:
-        photo_file = request.FILES['photo']
+    if photo_file := request.FILES.get('photo'):
         photo_file.name = f'{user.id}---{photo_file.name}'
         user.photo = photo_file
         user.save()
