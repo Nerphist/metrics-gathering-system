@@ -256,7 +256,7 @@ class ContactInfoRetrieveView(APIView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_info(request: Request, *args, **kwargs):
-    ser = UserSerializer(request.user)
+    ser = UserSerializer(request.user, context={'request': request})
     return Response(ser.data)
 
 
