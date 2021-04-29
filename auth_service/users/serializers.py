@@ -5,6 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from permissions.permissions import is_admin
 from users.models import User, Invite, UserGroup, ContactInfo
 from utils import DefaultSerializer
 
@@ -18,10 +19,11 @@ class ContactInfoSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     contact_infos = ContactInfoSerializer(many=True)
     photo_url = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email',
+        fields = ('id', 'created', 'updated', 'email', 'is_admin',
                   'password', 'first_name', 'last_name', 'contact_infos', 'photo_url')
         extra_kwargs = {'password': {'write_only': True}}
 
@@ -30,6 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
         else:
             return None
+
+    def get_is_admin(self, obj):
+        return is_admin(obj)
 
     def validate_password(self, value: str) -> str:
         return make_password(value)

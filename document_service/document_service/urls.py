@@ -15,11 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.conf.urls.static import static
+from django.urls import include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
 from document_service import settings
+from documents.urls import urlpatterns as document_urls
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -37,4 +39,5 @@ schema_view = get_schema_view(
 urlpatterns = [
                   url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
                   url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+                  url(r'^documents/', include(document_urls)),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
