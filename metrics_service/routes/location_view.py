@@ -6,11 +6,12 @@ from sqlalchemy.orm import Session
 
 from auth_api import get_user
 from db import get_db
-from models.location import Building, Location, Floor, Room, ResponsibleUser
+from models.location import Building, Location, Floor, Room, ResponsibleUser, BuildingType
 from permissions import is_admin_permission
 from request_models.location_requests import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, \
     AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel, ChangeRoomModel, \
-    ChangeFloorModel, ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel
+    ChangeFloorModel, ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel, BuildingTypeModel, \
+    AddBuildingTypeModel, BuildingTypeCountModel
 from routes import metrics_router
 
 
@@ -65,9 +66,54 @@ async def remove_location(location_id: int, db: Session = Depends(get_db), _=Dep
     return ""
 
 
+@metrics_router.get("/building_types/", status_code=200, response_model=List[BuildingTypeModel])
+async def get_building_types(db: Session = Depends(get_db)):
+    building_types = db.query(BuildingType).all()
+    return [BuildingTypeModel.from_orm(b) for b in building_types]
+
+
+@metrics_router.get("/building_types/count/", status_code=200, response_model=List[BuildingTypeCountModel])
+async def get_building_types(db: Session = Depends(get_db)):
+    building_types = db.query(BuildingType).all()
+    return [BuildingTypeCountModel(id=b.id, name=b.name, buildings_count=len(b.buildings)) for b in building_types]
+
+
+@metrics_router.post("/building_types/", status_code=201, response_model=BuildingTypeModel)
+async def add_building_type(body: AddBuildingTypeModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    building_type = BuildingType(name=body.name)
+    db.add(building_type)
+    try:
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='BuildingType already exists', status_code=400)
+    return BuildingTypeModel.from_orm(building_type)
+
+
+@metrics_router.patch("/building_types/{building_type_id}", status_code=200, response_model=BuildingTypeModel)
+async def patch_building_type(building_type_id: int, body: AddBuildingTypeModel, db: Session = Depends(get_db),
+                              _=Depends(is_admin_permission)):
+    building_type = db.query(BuildingType).filter_by(id=building_type_id).first()
+
+    building_type.name = body.name
+    db.add(building_type)
+    db.commit()
+    return BuildingTypeModel.from_orm(building_type)
+
+
+@metrics_router.delete("/building_types/{building_type_id}/", status_code=200)
+async def remove_building_type(building_type_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    db.query(BuildingType).filter_by(id=building_type_id).delete()
+    db.commit()
+    return ""
+
+
 @metrics_router.get("/buildings/", status_code=200, response_model=List[BuildingModel])
-async def get_buildings(db: Session = Depends(get_db)):
-    building_models = db.query(Building).all()
+async def get_buildings(db: Session = Depends(get_db), building_type_id: int = 0, ):
+    building_models = db.query(Building)
+    if building_type_id:
+        building_models = building_models.filter_by(building_type_id=building_type_id)
+    building_models = building_models.all()
+
     buildings = [BuildingModel.from_orm(b) for b in building_models]
     for index, building in enumerate(building_models):
         for user in building.responsible_users:

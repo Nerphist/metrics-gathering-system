@@ -5,6 +5,13 @@ from db import Base
 from models.metrics import Device
 
 
+class BuildingType(Base):
+    __tablename__ = 'building_types'
+
+    name = Column(String(255), nullable=False, unique=True)
+    buildings = relationship("Building", backref="building_type")
+
+
 class Location(Base):
     __tablename__ = 'locations'
 
@@ -30,6 +37,8 @@ class Building(Base):
     floors = relationship("Floor", backref="building")
     responsible_users = relationship("ResponsibleUser", backref="building")
 
+    building_type_id = Column(Integer, ForeignKey('building_types.id', ondelete='CASCADE'))
+
     name = Column(String)
     description = Column(String)
 
@@ -37,7 +46,6 @@ class Building(Base):
     last_capital_repair_year = Column(Integer)
     building_index = Column(String)
     address = Column(String)
-    building_type = Column(String, index=True)
 
 
 class Floor(Base):

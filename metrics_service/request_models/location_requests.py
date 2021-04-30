@@ -3,7 +3,7 @@ from typing import List, Any
 from pydantic.main import BaseModel
 from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
-from models.location import Location, Building, Floor, Room
+from models.location import Location, Building, Floor, Room, BuildingType
 from request_models.metrics_requests import DeviceModel
 
 
@@ -47,6 +47,16 @@ class LocationModel(sqlalchemy_to_pydantic(Location)):
     buildings: List[BuildingModel]
 
 
+class BuildingTypeModel(sqlalchemy_to_pydantic(BuildingType)):
+    buildings: List[BuildingModel]
+
+
+class BuildingTypeCountModel(BaseModel):
+    id: int
+    name: str
+    buildings_count: int
+
+
 class AddLocationModel(BaseModel):
     name: str
     latitude: int
@@ -82,6 +92,10 @@ class AddRoomModel(BaseModel):
     name: str
 
 
+class AddBuildingTypeModel(BaseModel):
+    name: str
+
+
 class ChangeLocationModel(BaseModel):
     name: str = None
     latitude: int = None
@@ -93,7 +107,7 @@ class ChangeBuildingModel(BaseModel):
     description: str = None
     address: str = None
     building_index: str = None
-    building_type: str = None
+    building_type_id: int = None
     last_capital_repair_year: int = None
     construction_year: int = None
 
