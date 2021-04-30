@@ -281,7 +281,7 @@ def get_user_info(request: Request, *args, **kwargs):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_all_created_invitations(request: Request, *args, **kwargs):
-    invites = Invite.objects.filter(inviter=request.user).order_by('invitee__activated').all()
+    invites = Invite.objects.filter(inviter=request.user).filter(invitee__activated=False).all()
     return Response(data=[InviteSerializer(invite).data for invite in invites])
 
 
