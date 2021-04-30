@@ -24,7 +24,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'created', 'updated', 'email', 'is_admin',
-                  'password', 'first_name', 'last_name', 'contact_infos', 'photo_url')
+                  'password', 'first_name', 'last_name',
+                  'contact_infos', 'photo_url', 'activated')
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_photo_url(self, obj):
@@ -43,7 +44,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name')
+        fields = ('id', 'first_name', 'last_name', 'activated')
 
 
 class AddContactInfoSerializer(serializers.ModelSerializer):

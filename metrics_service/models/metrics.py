@@ -16,6 +16,13 @@ class Reading(Base):
     device_id = Column(Integer, ForeignKey('devices.id'))
 
 
+class DeviceType(Base):
+    __tablename__ = 'device_types'
+
+    name = Column(String(255), nullable=False, unique=True)
+    devices = relationship("Device", backref="device_type")
+
+
 class Device(Base):
     __tablename__ = 'devices'
 
@@ -24,11 +31,12 @@ class Device(Base):
     name = Column(String(255))
     description = Column(String(255), default='')
     manufacture_date = Column(DateTime, default=datetime.utcnow)
-    type = Column(String(255), default='')
     secret_key = Column(String(63), default=uuid.uuid4, index=True, unique=True)
     recognition_key = Column(String(63), default=uuid.uuid4, index=True, unique=True)
 
-    room_id = Column(Integer, ForeignKey('building_floor_rooms.id'))
+    device_type_id = Column(ForeignKey('device_types.id'), nullable=False)
+
+    room_id = Column(Integer, ForeignKey('building_rooms.id'))
     readings = relationship(Reading, backref='device')
 
 

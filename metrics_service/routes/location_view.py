@@ -6,25 +6,26 @@ from sqlalchemy.orm import Session
 
 from auth_api import get_user
 from db import get_db
-from models.location import Building, Location, Floor, Room, ResponsibleUser, BuildingType
+from models.location import Building, Location, Room, ResponsibleUser, BuildingType
 from permissions import is_admin_permission
-from request_models.location_requests import BuildingModel, AddBuildingModel, FloorModel, AddFloorModel, RoomModel, \
+from request_models.location_requests import BuildingModel, AddBuildingModel, RoomModel, \
     AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel, ChangeRoomModel, \
-    ChangeFloorModel, ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel, BuildingTypeModel, \
-    AddBuildingTypeModel, BuildingTypeCountModel
+    ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel, BuildingTypeModel, \
+    AddBuildingTypeModel, BuildingTypeCountModel, HeadcountModel
 from routes import metrics_router
 
 
-@metrics_router.get("/structure/", status_code=200)
-async def get_full_structure(db: Session = Depends(get_db)):
-    buildings = db.query(Building).all()
-    return {
-        building.id: {
-            floor.id: {
-                room.id: [device.id for device in room.devices]
-                for room in floor.rooms}
-            for floor in building.floors}
-        for building in buildings}
+@metrics_router.get("/headcount/", status_code=200, response_model=HeadcountModel)
+async def get_headcount(db: Session = Depends(get_db)):
+    buildings: List[Building] = db.query(Building).all()
+    model = HeadcountModel()
+    for building in buildings:
+        model.living += building.living_quantity
+        studying = building.studying_daytime + building.studying_evening_time + building.studying_part_time
+        working = building.working_help + building.working_science + building.working_teachers
+        model.studying += studying
+        model.personnel += working
+    return model
 
 
 @metrics_router.get("/locations/", status_code=200, response_model=List[LocationModel])
@@ -203,58 +204,17 @@ async def remove_responsible_user_by_user_id(user_id: int, db: Session = Depends
     return ""
 
 
-@metrics_router.get("/floors/", status_code=200, response_model=List[FloorModel])
-async def get_floors(building_id: int = 0, db: Session = Depends(get_db)):
-    floors = db.query(Floor)
-    if building_id:
-        floors = floors.filter_by(building_id=building_id)
-    return [FloorModel.from_orm(b) for b in floors.all()]
-
-
-@metrics_router.post("/floors/", status_code=201, response_model=FloorModel)
-async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
-    floor = Floor(building_id=body.building_id, number=body.number)
-    db.add(floor)
-    try:
-        db.commit()
-    except IntegrityError:
-        raise HTTPException(detail='Floor already exists', status_code=400)
-    return FloorModel.from_orm(floor)
-
-
-@metrics_router.patch("/floors/{floor_id}", status_code=200, response_model=FloorModel)
-async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depends(get_db),
-                      _=Depends(is_admin_permission)):
-    floor = db.query(Floor).filter_by(id=floor_id).first()
-
-    args = {k: v for k, v in body.dict().items() if v}
-    if args:
-        for k, v in args.items():
-            setattr(floor, k, v)
-
-        db.add(floor)
-        db.commit()
-    return FloorModel.from_orm(floor)
-
-
-@metrics_router.delete("/floors/{floor_id}/", status_code=200)
-async def remove_floor(floor_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
-    db.query(Floor).filter_by(id=floor_id).delete()
-    db.commit()
-    return ""
-
-
 @metrics_router.get("/rooms/", status_code=200, response_model=List[RoomModel])
-async def get_rooms(floor_id: int = 0, db: Session = Depends(get_db)):
-    rooms = db.query(Floor)
-    if floor_id:
-        rooms = rooms.filter_by(floor_id=floor_id)
+async def get_rooms(building_id: int = 0, db: Session = Depends(get_db)):
+    rooms = db.query(Room)
+    if building_id:
+        rooms = rooms.filter_by(building_id=building_id)
     return [RoomModel.from_orm(b) for b in rooms]
 
 
 @metrics_router.post("/rooms/", status_code=201, response_model=RoomModel)
 async def add_room(body: AddRoomModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
-    room = Room(floor_id=body.floor_id, name=body.name)
+    room = Room(**body.dict())
     db.add(room)
     try:
         db.commit()

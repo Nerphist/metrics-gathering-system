@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, String, Integer, UniqueConstraint, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 
 from db import Base
@@ -34,7 +34,7 @@ class Building(Base):
     __tablename__ = 'buildings'
 
     location_id = Column(Integer, ForeignKey('locations.id', ondelete='CASCADE'))
-    floors = relationship("Floor", backref="building")
+    rooms = relationship("Room", backref="building")
     responsible_users = relationship("ResponsibleUser", backref="building")
 
     building_type_id = Column(Integer, ForeignKey('building_types.id', ondelete='CASCADE'))
@@ -42,25 +42,27 @@ class Building(Base):
     name = Column(String)
     description = Column(String)
 
+    living_quantity = Column(Integer, nullable=False, default=0)
+    studying_daytime = Column(Integer, nullable=False, default=0)
+    studying_evening_time = Column(Integer, nullable=False, default=0)
+    studying_part_time = Column(Integer, nullable=False, default=0)
+    working_teachers = Column(Integer, nullable=False, default=0)
+    working_science = Column(Integer, nullable=False, default=0)
+    working_help = Column(Integer, nullable=False, default=0)
+
     construction_year = Column(Integer)
     last_capital_repair_year = Column(Integer)
     building_index = Column(String)
     address = Column(String)
 
 
-class Floor(Base):
-    __tablename__ = 'building_floors'
-
-    number = Column(Integer)
-    building_id = Column(Integer, ForeignKey('buildings.id'))
-    rooms = relationship("Room", backref="floor")
-    __tableargs__ = (UniqueConstraint('number', 'building_id', name='_building_floor_number_uc'),)
-
-
 class Room(Base):
-    __tablename__ = 'building_floor_rooms'
+    __tablename__ = 'building_rooms'
 
     name = Column(String(255))
-    floor_id = Column(Integer, ForeignKey('building_floors.id'))
+    building_id = Column(Integer, ForeignKey('buildings.id'))
+    size = Column(Numeric)
+    designation = Column(String(255))
+    responsible_department = Column(String(255))
     devices = relationship(Device, backref="room")
-    __tableargs__ = (UniqueConstraint('name', 'floor_id', name='_floor_room_name_uc'),)
+    __tableargs__ = (UniqueConstraint('name', 'building_id', name='_building_room_name_uc'),)
