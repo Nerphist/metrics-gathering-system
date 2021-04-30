@@ -33,7 +33,7 @@ from users.views import LoginView, LogoutView
 def create_admin():
     try:
         admin = User.objects.create(email=ADMIN_EMAIL, password=make_password(ADMIN_PASSWORD), first_name='admin',
-                                    last_name='admin')
+                                    last_name='admin', activated=True)
         admin_group = UserGroup.objects.create(name=ADMIN_GROUP_NAME, admin=admin)
         admin_group.users.add(admin)
     except:
