@@ -19,7 +19,8 @@ from permissions.permissions import is_admin, is_super_admin, ServerApiKeyAuthor
 from users.models import User, Invite, UserGroup, ContactInfo
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer, \
-    PatchUserSerializer, UserIdQuerySerializer, ContactInfoSerializer, AddContactInfoSerializer
+    PatchUserSerializer, UserIdQuerySerializer, ContactInfoSerializer, AddContactInfoSerializer, \
+    PatchContactInfoSerializer
 from users.utils import generate_random_email, generate_random_password
 
 
@@ -267,6 +268,30 @@ class ContactInfoRetrieveView(APIView):
         contact_info.delete()
 
         return Response(data={})
+
+    @swagger_auto_schema(request_body=PatchContactInfoSerializer, responses={'200': ContactInfoSerializer})
+    def patch(self, request: Request, contact_info_id: int, *args, **kwargs):
+        serializer = PatchContactInfoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
+        if not contact_info:
+            return Response(data={'detail': 'Contact info not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != contact_info.user:
+            if not is_admin(request.user):
+                return Response(data={'detail': 'Only admin can do it'}, status=status.HTTP_403_FORBIDDEN)
+            elif not is_super_admin(request.user):
+                return Response(data={'detail': 'Only superadmin can change admin\'s information'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+        contact_info.name = serializer.validated_data.get('name', contact_info.name)
+        contact_info.type = serializer.validated_data.get('type', contact_info.type)
+        contact_info.value = serializer.validated_data.get('value', contact_info.value)
+        contact_info.notes = serializer.validated_data.get('notes', contact_info.notes)
+
+        contact_info.save()
+        return Response(ContactInfoSerializer(contact_info).data)
 
 
 @swagger_auto_schema(method='GET', responses={'200': UserSerializer})

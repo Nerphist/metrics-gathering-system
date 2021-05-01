@@ -59,6 +59,13 @@ class AddContactInfoSerializer(serializers.ModelSerializer):
         return value.lower()
 
 
+class PatchContactInfoSerializer(DefaultSerializer):
+    name = serializers.CharField(max_length=255, required=False)
+    type = serializers.CharField(max_length=255, required=False)
+    value = serializers.CharField(max_length=255, required=False)
+    notes = serializers.CharField(max_length=255, required=False)
+
+
 class AddUserSerializer(DefaultSerializer):
     first_name = serializers.CharField(max_length=255, required=True)
     last_name = serializers.CharField(max_length=255, required=True)

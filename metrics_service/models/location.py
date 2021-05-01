@@ -16,8 +16,8 @@ class Location(Base):
     __tablename__ = 'locations'
 
     name = Column(String(255), unique=True)
-    longitude = Column(String(255))
-    latitude = Column(String(255))
+    longitude = Column(Numeric(), nullable=False)
+    latitude = Column(Numeric(), nullable=False)
     buildings = relationship("Building", backref="location")
     __tableargs__ = (UniqueConstraint('longitude', 'latitude', name='_coordinates_uc'),)
 

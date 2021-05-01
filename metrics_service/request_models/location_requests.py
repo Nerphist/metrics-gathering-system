@@ -62,8 +62,8 @@ class BuildingTypeModel(sqlalchemy_to_pydantic(BuildingType)):
 
 class AddLocationModel(BaseModel):
     name: str
-    latitude: int
-    longitude: int
+    latitude: float
+    longitude: float
 
 
 class AddBuildingModel(BaseModel):
@@ -107,8 +107,8 @@ class AddBuildingTypeModel(BaseModel):
 
 class ChangeLocationModel(BaseModel):
     name: str = None
-    latitude: int = None
-    longitude: int = None
+    latitude: float = None
+    longitude: float = None
 
 
 class ChangeBuildingModel(BaseModel):
