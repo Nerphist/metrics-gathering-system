@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import Depends, Header, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -28,8 +29,12 @@ async def add_reading(body: AddReadingModel, db: Session = Depends(get_db), secr
         raise HTTPException(status_code=400, detail="Wrong secret key")
 
     reading.device_id = device.id
-    db.add(reading)
-    db.commit()
+    try:
+        db.add(reading)
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='Reading already exists', status_code=400)
+
     return ReadingModel.from_orm(reading)
 
 
@@ -55,8 +60,12 @@ async def get_devices(room_id: int = 0, device_name: str = '', db: Session = Dep
 @metrics_router.post("/devices/", status_code=201, response_model=DeviceModel)
 async def add_device(body: AddDeviceModel, db: Session = Depends(get_db)):
     device = Device(**body.dict())
-    db.add(device)
-    db.commit()
+    try:
+        db.add(device)
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='Device already exists', status_code=400)
+
     return DeviceModel.from_orm(device)
 
 
@@ -96,8 +105,12 @@ async def get_device_types(room_id: int = 0, device_type_name: str = '', db: Ses
 @metrics_router.post("/device_types/", status_code=201, response_model=DeviceTypeModel)
 async def add_device_type(body: AddDeviceTypeModel, db: Session = Depends(get_db)):
     device_type = DeviceType(**body.dict())
-    db.add(device_type)
-    db.commit()
+    try:
+        db.add(device_type)
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='Device type already exists', status_code=400)
+
     return DeviceTypeModel.from_orm(device_type)
 
 

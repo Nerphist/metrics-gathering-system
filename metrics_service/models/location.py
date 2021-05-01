@@ -60,7 +60,7 @@ class Room(Base):
     __tablename__ = 'building_rooms'
 
     name = Column(String(255))
-    building_id = Column(Integer, ForeignKey('buildings.id'))
+    building_id = Column(Integer, ForeignKey('buildings.id', ondelete='CASCADE'))
     size = Column(Numeric)
     designation = Column(String(255))
     responsible_department = Column(String(255))

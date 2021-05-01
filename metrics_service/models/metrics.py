@@ -13,7 +13,7 @@ class Reading(Base):
     date = Column(DateTime, default=datetime.utcnow)
     type = Column(String(255))
     value = Column(String(255))
-    device_id = Column(Integer, ForeignKey('devices.id'))
+    device_id = Column(Integer, ForeignKey('devices.id', ondelete='CASCADE'))
 
 
 class DeviceType(Base):
@@ -36,7 +36,7 @@ class Device(Base):
 
     device_type_id = Column(ForeignKey('device_types.id'), nullable=False)
 
-    room_id = Column(Integer, ForeignKey('building_rooms.id'))
+    room_id = Column(Integer, ForeignKey('building_rooms.id', ondelete='SET NULL'))
     readings = relationship(Reading, backref='device')
 
 
