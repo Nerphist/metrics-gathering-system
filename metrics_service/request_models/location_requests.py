@@ -49,6 +49,7 @@ class BuildingTypeCountModel(BaseModel):
 class BuildingModel(sqlalchemy_to_pydantic(Building)):
     rooms: List[RoomModel]
     building_type: sqlalchemy_to_pydantic(BuildingType)
+    location: sqlalchemy_to_pydantic(Location)
     responsible_users: Any
 
 
