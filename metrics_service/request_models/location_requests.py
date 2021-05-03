@@ -136,3 +136,6 @@ class ChangeResponsibleUserModel(BaseModel):
 
 class ChangeRoomModel(BaseModel):
     name: str = None
+    size: float = None
+    designation: str = None
+    responsible_department: str = None
