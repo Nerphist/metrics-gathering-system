@@ -1,4 +1,4 @@
-package com.strafeup.fetchservice.model;
+package com.strafeup.fetchservice.model.types;
 
 public enum MetricsType {
 
