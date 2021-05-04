@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import Depends, Header, HTTPException
@@ -13,10 +14,18 @@ from routes import metrics_router
 
 
 @metrics_router.get("/readings/", status_code=200, response_model=List[ReadingModel])
-async def get_readings(device_id: int = 0, db: Session = Depends(get_db)):
+async def get_readings(type_name: str = '', date_start: str = '', date_end: str = '', device_id: int = 0, db: Session = Depends(get_db)):
     readings = db.query(Reading)
+    if type_name:
+        readings = readings.filter_by(type=type_name)
     if device_id:
         readings = readings.filter_by(device_id=device_id)
+    if date_start:
+        date_start_formatted = datetime.strptime(date_start, "%Y-%m-%dT%H:%M:%S")
+        readings = readings.filter(Reading.date >= date_start_formatted)
+    if date_end:
+        date_end_formatted = datetime.strptime(date_end, "%Y-%m-%dT%H:%M:%S")
+        readings = readings.filter(Reading.date <= date_end_formatted)
     readings = readings.all()
     return [ReadingModel.from_orm(r) for r in readings]
 

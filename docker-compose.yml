@@ -105,6 +105,22 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - PGDATA=/var/lib/postgresql/data
+  fetch_service:
+    depends_on:
+      - metrics_service
+      - auth_service
+    build:
+      context: ./fetch_service/
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=8004
+      - DEBUG=${DEBUG}
+      - SERVER_API_KEY=${SERVER_API_KEY}
+    networks:
+      web:
+        ipv4_address: 172.28.0.8
+    ports:
+      - 8004:8004
   document_service:
     depends_on:
       - postgres-document
