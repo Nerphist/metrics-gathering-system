@@ -9,7 +9,10 @@ config = context.config
 
 fileConfig(config.config_file_name)
 
-target_metadata = None
+import sys
+sys.path.append('C:\\Users\\User\\PycharmProjects\\metrics_gathering_system\\metrics_service')
+from models.location import Location
+target_metadata = Location.metadata
 
 
 def run_migrations_offline():

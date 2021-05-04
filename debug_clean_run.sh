@@ -17,4 +17,4 @@ docker volume create --name=db-tasks-volume
 docker volume create --name=db-document-volume
 
 docker-compose build
-docker-compose up
+docker-compose --env-file .debug.env up

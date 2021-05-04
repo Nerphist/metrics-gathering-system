@@ -20,6 +20,8 @@ services:
         ipv4_address: 172.28.0.2
     ports:
       - 8001:8001
+    volumes:
+      - user-photos-volume:/usr/src/app/user-photos
   postgres-auth:
     image: postgres:13
     networks:
@@ -103,6 +105,58 @@ services:
       - POSTGRES_PASSWORD=threehundredbucks
       - POSTGRES_DB=dungeon
       - PGDATA=/var/lib/postgresql/data
+  fetch_service:
+    depends_on:
+      - metrics_service
+      - auth_service
+    build:
+      context: ./fetch_service/
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=8004
+      - DEBUG=${DEBUG}
+      - SERVER_API_KEY=${SERVER_API_KEY}
+    networks:
+      web:
+        ipv4_address: 172.28.0.8
+    ports:
+      - 8004:8004
+  document_service:
+    depends_on:
+      - postgres-document
+    build:
+      context: ./document_service/
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - POSTGRES_HOST=172.28.0.11
+      - AUTH_SERVICE_HOST=172.28.0.2
+      - AUTH_SERVICE_PORT=8001
+      - DEBUG=${DEBUG}
+      - SERVER_API_KEY=${SERVER_API_KEY}
+    networks:
+      web:
+        ipv4_address: 172.28.0.10
+    ports:
+      - 8005:8005
+    volumes:
+      - documents-volume:/usr/src/app/document-files
+  postgres-document:
+    image: postgres:13
+    networks:
+      web:
+        ipv4_address: 172.28.0.11
+    ports:
+      - 5437:5432
+    volumes:
+      - db-document-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gym_master
+      - POSTGRES_PASSWORD=threehundredbucks
+      - POSTGRES_DB=dungeon
+      - PGDATA=/var/lib/postgresql/data
 networks:
   web:
     ipam:
@@ -110,9 +164,15 @@ networks:
       config:
         - subnet: 172.28.0.0/16
 volumes:
+  user-photos-volume:
+    external: true
+  documents-volume:
+    external: true
   db-auth-volume:
     external: true
   db-metrics-volume:
     external: true
   db-tasks-volume:
+    external: true
+  db-document-volume:
     external: true

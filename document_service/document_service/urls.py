@@ -15,32 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.conf.urls.static import static
-from django.contrib.auth.hashers import make_password
-from django.urls import path, include
+from django.urls import include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import token_refresh
 
-from auth_service import settings
-from auth_service.settings import ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_GROUP_NAME
-from users.models import UserGroup, User
-from users.urls import urlpatterns as user_urls
-from permissions.urls import urlpatterns as permission_urls
-from users.views import LoginView, LogoutView
-
-
-def create_admin():
-    try:
-        admin = User.objects.create(email=ADMIN_EMAIL, password=make_password(ADMIN_PASSWORD), first_name='admin',
-                                    last_name='admin', activated=True)
-        admin_group = UserGroup.objects.create(name=ADMIN_GROUP_NAME, admin=admin)
-        admin_group.users.add(admin)
-    except:
-        pass
-
-
-create_admin()
+from document_service import settings
+from documents.urls import urlpatterns as document_urls
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -58,9 +39,5 @@ schema_view = get_schema_view(
 urlpatterns = [
                   url(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
                   url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-                  path('token/refresh/', token_refresh, name='Token refresh'),
-                  path('login/', LoginView.as_view(), name='Login'),
-                  path('logout/', LogoutView.as_view(), name='Logout'),
-                  url(r'^users/', include(user_urls)),
-                  url(r'^permissions/', include(permission_urls)),
+                  url(r'^documents/', include(document_urls)),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

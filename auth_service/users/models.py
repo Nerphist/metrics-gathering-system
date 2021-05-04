@@ -1,3 +1,5 @@
+from enum import Enum
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models, transaction
@@ -30,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractCreateUpdateModel):
     email = models.EmailField(max_length=255, unique=True)
     password = models.CharField(max_length=511)
     activated = models.BooleanField(default=False)
+    photo = models.ImageField(null=True, default=None)
 
     objects = UserManager()
 
@@ -52,3 +55,16 @@ class UserGroup(AbstractCreateUpdateModel):
     name = models.CharField(max_length=255, unique=True)
     users = models.ManyToManyField(User, related_name='user_groups')
     admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='controlled_groups')
+
+
+class ContactInfo(AbstractCreateUpdateModel):
+    class Type(Enum):
+        phone = 1
+        email = 2
+        messenger = 3
+
+    user = models.ForeignKey(User, related_name='contact_infos', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+    notes = models.CharField(max_length=255)

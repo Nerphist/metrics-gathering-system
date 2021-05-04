@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from auth_service.settings import ADMIN_GROUP_NAME
-from permissions.metrics_api import get_structure
+from metrics_api import get_structure
 from permissions.models import PermissionGroup
 from permissions.permissions import is_admin
 from permissions.serializers import GetPermissionsRequestQuerySerializer, \

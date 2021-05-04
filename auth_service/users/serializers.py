@@ -5,15 +5,37 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User, Invite, UserGroup
+from permissions.permissions import is_admin
+from users.models import User, Invite, UserGroup, ContactInfo
 from utils import DefaultSerializer
 
 
+class ContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInfo
+        fields = ('id', 'created', 'updated', 'user_id', 'name', 'type', 'value', 'notes')
+
+
 class UserSerializer(serializers.ModelSerializer):
+    contact_infos = ContactInfoSerializer(many=True)
+    photo_url = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email', 'password', 'first_name', 'last_name')
+        fields = ('id', 'created', 'updated', 'email', 'is_admin',
+                  'password', 'first_name', 'last_name',
+                  'contact_infos', 'photo_url', 'activated')
         extra_kwargs = {'password': {'write_only': True}}
+
+    def get_photo_url(self, obj):
+        if obj.photo:
+            return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
+        else:
+            return None
+
+    def get_is_admin(self, obj):
+        return is_admin(obj)
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
@@ -22,12 +44,32 @@ class UserSerializer(serializers.ModelSerializer):
 class UserPartSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name')
+        fields = ('id', 'first_name', 'last_name', 'activated')
+
+
+class AddContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInfo
+        fields = ('id', 'created', 'updated', 'name', 'type', 'value', 'notes')
+
+    def validate_type(self, value: str):
+        if value.lower() not in ContactInfo.Type.__members__:
+            return ContactInfo.Type.messenger.name
+
+        return value.lower()
+
+
+class PatchContactInfoSerializer(DefaultSerializer):
+    name = serializers.CharField(max_length=255, required=False)
+    type = serializers.CharField(max_length=255, required=False)
+    value = serializers.CharField(max_length=255, required=False)
+    notes = serializers.CharField(max_length=255, required=False)
 
 
 class AddUserSerializer(DefaultSerializer):
     first_name = serializers.CharField(max_length=255, required=True)
     last_name = serializers.CharField(max_length=255, required=True)
+    contact_infos = AddContactInfoSerializer(many=True, required=False)
 
 
 class PatchUserSerializer(DefaultSerializer):
@@ -43,7 +85,7 @@ class PatchUserSerializer(DefaultSerializer):
 
 class InviteSerializer(serializers.ModelSerializer):
     invitee = UserPartSerializer()
-    inviter = UserSerializer()
+    inviter = UserPartSerializer()
 
     class Meta:
         model = Invite
@@ -83,7 +125,7 @@ class UserWithTokenSerializer(DefaultSerializer):
         data['refresh'] = str(refresh_token)
         data['access'] = str(refresh_token.access_token)
 
-        user_serializer = UserSerializer(user)
+        user_serializer = UserSerializer(user, context=self.context)
         data.update(user_serializer.data)
 
         return data
