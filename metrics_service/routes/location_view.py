@@ -6,12 +6,12 @@ from sqlalchemy.orm import Session
 
 from auth_api import get_user
 from db import get_db
-from models.location import Building, Location, Room, ResponsibleUser, BuildingType
+from models.location import Building, Location, Room, ResponsibleUser, BuildingType, Floor
 from permissions import is_admin_permission
 from request_models.location_requests import BuildingModel, AddBuildingModel, RoomModel, \
     AddRoomModel, LocationModel, AddLocationModel, ResponsibleUserModel, AddResponsibleUserModel, ChangeRoomModel, \
     ChangeResponsibleUserModel, ChangeBuildingModel, ChangeLocationModel, BuildingTypeModel, \
-    AddBuildingTypeModel, BuildingTypeCountModel, HeadcountModel
+    AddBuildingTypeModel, BuildingTypeCountModel, HeadcountModel, FloorModel, AddFloorModel, ChangeFloorModel
 from routes import metrics_router
 
 
@@ -109,10 +109,12 @@ async def remove_building_type(building_type_id: int, db: Session = Depends(get_
 
 
 @metrics_router.get("/buildings/", status_code=200, response_model=List[BuildingModel])
-async def get_buildings(db: Session = Depends(get_db), building_type_id: int = 0, ):
+async def get_buildings(db: Session = Depends(get_db), building_type_id: int = 0, location_id: int = 0, ):
     building_models = db.query(Building)
     if building_type_id:
         building_models = building_models.filter_by(building_type_id=building_type_id)
+    if location_id:
+        building_models = building_models.filter_by(location_id=location_id)
     building_models = building_models.all()
 
     buildings = [BuildingModel.from_orm(b) for b in building_models]
@@ -205,10 +207,10 @@ async def remove_responsible_user_by_user_id(user_id: int, db: Session = Depends
 
 
 @metrics_router.get("/rooms/", status_code=200, response_model=List[RoomModel])
-async def get_rooms(building_id: int = 0, db: Session = Depends(get_db)):
+async def get_rooms(floor_id: int = 0, db: Session = Depends(get_db)):
     rooms = db.query(Room)
-    if building_id:
-        rooms = rooms.filter_by(building_id=building_id)
+    if floor_id:
+        rooms = rooms.filter_by(floor_id=floor_id)
     return [RoomModel.from_orm(b) for b in rooms]
 
 
@@ -241,5 +243,46 @@ async def patch_room(room_id: int, body: ChangeRoomModel, db: Session = Depends(
 @metrics_router.delete("/rooms/{room_id}/", status_code=200)
 async def remove_room(room_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(Room).filter_by(id=room_id).delete()
+    db.commit()
+    return ""
+
+
+@metrics_router.get("/floors/", status_code=200, response_model=List[FloorModel])
+async def get_floors(building_id: int = 0, db: Session = Depends(get_db)):
+    floors = db.query(Floor)
+    if building_id:
+        floors = floors.filter_by(building_id=building_id)
+    return [FloorModel.from_orm(b) for b in floors]
+
+
+@metrics_router.post("/floors/", status_code=201, response_model=FloorModel)
+async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    floor = Floor(**body.dict())
+    db.add(floor)
+    try:
+        db.commit()
+    except IntegrityError:
+        raise HTTPException(detail='Floor already exists', status_code=400)
+    return FloorModel.from_orm(floor)
+
+
+@metrics_router.patch("/floors/{floor_id}", status_code=200, response_model=FloorModel)
+async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depends(get_db),
+                      _=Depends(is_admin_permission)):
+    floor = db.query(Floor).filter_by(id=floor_id).first()
+
+    args = {k: v for k, v in body.dict().items() if v}
+    if args:
+        for k, v in args.items():
+            setattr(floor, k, v)
+
+        db.add(floor)
+        db.commit()
+    return FloorModel.from_orm(floor)
+
+
+@metrics_router.delete("/floors/{floor_id}/", status_code=200)
+async def remove_floor(floor_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+    db.query(Floor).filter_by(id=floor_id).delete()
     db.commit()
     return ""
