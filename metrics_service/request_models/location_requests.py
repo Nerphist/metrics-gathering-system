@@ -3,8 +3,9 @@ from typing import List, Any
 from pydantic.main import BaseModel
 from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
-from models.location import Location, Building, Room, BuildingType
-from request_models.metrics_requests import DeviceModel
+from models.location import Location, Building, Room, BuildingType, Floor, ResponsibleUser
+from request_models import make_change_model, make_add_model
+from request_models.metrics_requests import MeterModel
 
 
 class HeadcountModel(BaseModel):
@@ -37,7 +38,11 @@ class ResponsibleUserModel(BaseModel):
 
 
 class RoomModel(sqlalchemy_to_pydantic(Room)):
-    devices: List[DeviceModel]
+    pass
+
+
+class FloorModel(sqlalchemy_to_pydantic(Floor)):
+    rooms: List[RoomModel]
 
 
 class BuildingTypeCountModel(BaseModel):
@@ -47,10 +52,11 @@ class BuildingTypeCountModel(BaseModel):
 
 
 class BuildingModel(sqlalchemy_to_pydantic(Building)):
-    rooms: List[RoomModel]
+    floors: List[FloorModel]
+    meters: List[MeterModel]
     building_type: sqlalchemy_to_pydantic(BuildingType)
     location: sqlalchemy_to_pydantic(Location)
-    responsible_users: Any
+    responsible_people: Any
 
 
 class LocationModel(sqlalchemy_to_pydantic(Location)):
@@ -61,81 +67,16 @@ class BuildingTypeModel(sqlalchemy_to_pydantic(BuildingType)):
     buildings: List[BuildingModel]
 
 
-class AddLocationModel(BaseModel):
-    name: str
-    latitude: float
-    longitude: float
+AddResponsibleUserModel = make_add_model(sqlalchemy_to_pydantic(ResponsibleUser))
+AddLocationModel = make_add_model(sqlalchemy_to_pydantic(Location))
+AddBuildingTypeModel = make_add_model(sqlalchemy_to_pydantic(BuildingType))
+AddBuildingModel = make_add_model(sqlalchemy_to_pydantic(Building))
+AddFloorModel = make_add_model(sqlalchemy_to_pydantic(Floor))
+AddRoomModel = make_add_model(sqlalchemy_to_pydantic(Room))
 
-
-class AddBuildingModel(BaseModel):
-    location_id: int
-    name: str
-
-    description: str = None
-    address: str = None
-    building_index: str = None
-    building_type_id: int = None
-
-    last_capital_repair_year: int = None
-    construction_year: int = None
-
-    living_quantity: int = 0
-    studying_daytime: int = 0
-    studying_evening_time: int = 0
-    studying_part_time: int = 0
-    working_teachers: int = 0
-    working_science: int = 0
-    working_help: int = 0
-
-
-class AddResponsibleUserModel(BaseModel):
-    user_id: int
-    building_id: int
-    name: str
-
-
-class AddRoomModel(BaseModel):
-    building_id: int
-    name: str
-    size: float = None
-    designation: str = None
-    responsible_department: str = None
-
-
-class AddBuildingTypeModel(BaseModel):
-    name: str
-
-
-class ChangeLocationModel(BaseModel):
-    name: str = None
-    latitude: float = None
-    longitude: float = None
-
-
-class ChangeBuildingModel(BaseModel):
-    name: str = None
-    description: str = None
-    address: str = None
-    building_index: str = None
-    building_type_id: int = None
-    last_capital_repair_year: int = None
-    construction_year: int = None
-    living_quantity: int = None
-    studying_daytime: int = None
-    studying_evening_time: int = None
-    studying_part_time: int = None
-    working_teachers: int = None
-    working_science: int = None
-    working_help: int = None
-
-
-class ChangeResponsibleUserModel(BaseModel):
-    building_id: int = None
-    name: str = None
-
-
-class ChangeRoomModel(BaseModel):
-    name: str = None
-    size: float = None
-    designation: str = None
-    responsible_department: str = None
+ChangeResponsibleUserModel = make_change_model(sqlalchemy_to_pydantic(ResponsibleUser))
+ChangeLocationModel = make_change_model(sqlalchemy_to_pydantic(Location))
+ChangeBuildingTypeModel = make_change_model(sqlalchemy_to_pydantic(BuildingType))
+ChangeBuildingModel = make_change_model(sqlalchemy_to_pydantic(Building))
+ChangeFloorModel = make_change_model(sqlalchemy_to_pydantic(Floor))
+ChangeRoomModel = make_change_model(sqlalchemy_to_pydantic(Room))
