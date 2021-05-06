@@ -27,7 +27,7 @@ class Reading(Base):
 class WaterMeterSnapshot(Base):
     __tablename__ = 'water_meter_snapshots'
 
-    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), nullable=False)
+    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='water_meter_snapshot')
     consumption = Column(Numeric, nullable=False, default=None)
 
@@ -35,7 +35,7 @@ class WaterMeterSnapshot(Base):
 class ElectricityMeterSnapshot(Base):
     __tablename__ = 'electricity_meter_snapshots'
 
-    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), nullable=False)
+    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='electricity_meter_snapshot')
     current_voltage = Column(Numeric, nullable=False, default=None)
 
@@ -43,7 +43,7 @@ class ElectricityMeterSnapshot(Base):
 class HeatMeterSnapshot(Base):
     __tablename__ = 'heat_meter_snapshots'
 
-    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), nullable=False)
+    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='heat_meter_snapshot')
     current_voltage = Column(Numeric, nullable=False, default=None)
 
@@ -91,7 +91,7 @@ class Meter(Base):
 class ElectricityMeter(Base):
     __tablename__ = 'electricity_meters'
 
-    meter_id = Column(Integer, ForeignKey('meters.id', ondelete='CASCADE'), nullable=False)
+    meter_id = Column(Integer, ForeignKey('meters.id', ondelete='CASCADE'), nullable=False, unique=True)
     meter = relationship(Meter, back_populates='electricity')
     connection_type = Column(String(255), nullable=False)
     transformation_coefficient = Column(String(255), nullable=False)

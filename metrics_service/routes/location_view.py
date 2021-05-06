@@ -117,7 +117,7 @@ async def get_buildings(db: Session = Depends(get_db), building_type_id: int = 0
 
     buildings = [BuildingModel.from_orm(b) for b in building_models]
     for index, building in enumerate(building_models):
-        for user in building.responsible_users:
+        for user in building.responsible_people:
             user.user = get_user(user.user_id)
     return buildings
 
