@@ -46,7 +46,7 @@ async def patch_location(location_id: int, body: ChangeLocationModel, db: Sessio
                          _=Depends(is_admin_permission)):
     location = db.query(Location).filter_by(id=location_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(location, k, v)

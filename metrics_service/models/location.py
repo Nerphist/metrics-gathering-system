@@ -1,8 +1,15 @@
-from sqlalchemy import Column, String, Integer, UniqueConstraint, ForeignKey, Numeric
+import enum
+
+from sqlalchemy import Column, String, Integer, UniqueConstraint, ForeignKey, Numeric, Enum
 from sqlalchemy.orm import relationship
 
 from db import Base
 from models.metrics import Meter
+
+
+class FloorItemType(enum.Enum):
+    Room = 'Room'
+    Meter = 'Meter'
 
 
 class BuildingType(Base):
@@ -69,7 +76,7 @@ class Building(Base):
 class Floor(Base):
     __tablename__ = 'floors'
 
-    building_id = Column(Integer, ForeignKey('buildings.id', ondelete='CASCADE'))
+    building_id = Column(Integer, ForeignKey('buildings.id', ondelete='CASCADE'), nullable=False)
     index = Column(String(255), nullable=False)
     height = Column(Numeric, nullable=True, default=None)
     floor_plan_document_id = Column(Integer, nullable=True)
@@ -77,6 +84,14 @@ class Floor(Base):
 
     __tableargs__ = (UniqueConstraint('index', 'building_id', name='_building_floor_uc'),)
 
+
+# class FloorPlanItem(Base):
+#     __tablename__ = 'floor_items'
+#
+#     floor_id = Column(Integer, ForeignKey('floors.id', ondelete='CASCADE'), nullable=False)
+#     type = Column(Enum(FloorItemType), nullable=False)
+#     item_id = Column(Integer)
+#
 
 class Room(Base):
     __tablename__ = 'rooms'

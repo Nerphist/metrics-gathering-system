@@ -2,7 +2,7 @@ from pydantic.main import BaseModel
 
 
 def make_change_model(model: BaseModel) -> BaseModel:
-    model.__fields__.pop('id')
+    model.__fields__.pop('id', None)
     for field in model.__fields__.values():
         if field.default == Ellipsis:
             field.default = None

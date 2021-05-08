@@ -37,15 +37,27 @@ class AddReadingModel(BaseModel):
     date: datetime = datetime.utcnow()
 
 
-AddMeterModel = make_add_model(sqlalchemy_to_pydantic(Meter))
-AddElectricityMeterModel = make_add_model(sqlalchemy_to_pydantic(ElectricityMeter))
+class AddElectricityMeterModel(BaseModel):
+    connection_type: str
+    transformation_coefficient: str
+
+
+ChangeElectricityMeterModel = make_change_model(AddElectricityMeterModel)
+
+
+class ChangeMeterModel(make_change_model(sqlalchemy_to_pydantic(Meter))):
+    electricity: Optional[AddElectricityMeterModel]
+
+
+class AddMeterModel(make_add_model(sqlalchemy_to_pydantic(Meter))):
+    electricity: Optional[AddElectricityMeterModel]
+
+
 AddMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(MeterSnapshot))
 AddHeatMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(HeatMeterSnapshot))
 AddElectricityMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(ElectricityMeterSnapshot))
 AddWaterMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(WaterMeterSnapshot))
 
-ChangeMeterModel = make_change_model(sqlalchemy_to_pydantic(Meter))
-ChangeElectricityMeterModel = make_change_model(sqlalchemy_to_pydantic(ElectricityMeter))
 ChangeMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(MeterSnapshot))
 ChangeHeatMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(HeatMeterSnapshot))
 ChangeElectricityMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(ElectricityMeterSnapshot))

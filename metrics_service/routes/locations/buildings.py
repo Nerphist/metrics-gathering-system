@@ -86,7 +86,7 @@ async def patch_building(building_id: int, body: ChangeBuildingModel,
                          db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     building = db.query(Building).filter_by(id=building_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(building, k, v)

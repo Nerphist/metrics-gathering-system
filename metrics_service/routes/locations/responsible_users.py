@@ -34,7 +34,7 @@ async def patch_responsible_user(responsible_user_id: int, body: ChangeResponsib
                                  db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     responsible_user = db.query(ResponsibleUser).filter_by(id=responsible_user_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(responsible_user, k, v)

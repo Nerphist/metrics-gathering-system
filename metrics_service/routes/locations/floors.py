@@ -35,7 +35,7 @@ async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depen
                       _=Depends(is_admin_permission)):
     floor = db.query(Floor).filter_by(id=floor_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(floor, k, v)

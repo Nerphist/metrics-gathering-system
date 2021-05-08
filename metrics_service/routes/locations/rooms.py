@@ -36,7 +36,7 @@ async def patch_room(room_id: int, body: ChangeRoomModel, db: Session = Depends(
                      _=Depends(is_admin_permission)):
     room = db.query(Room).filter_by(id=room_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(room, k, v)

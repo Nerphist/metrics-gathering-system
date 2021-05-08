@@ -41,7 +41,7 @@ async def patch_meter_snapshot(meter_snapshot_id: int, body: ChangeMeterSnapshot
                                _=Depends(is_admin_permission)):
     meter_snapshot = db.query(MeterSnapshot).filter_by(id=meter_snapshot_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(meter_snapshot, k, v)
@@ -82,7 +82,7 @@ async def patch_heat_meter_snapshot(heat_meter_snapshot_id: int, body: ChangeHea
                                     db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     heat_meter_snapshot = db.query(HeatMeterSnapshot).filter_by(id=heat_meter_snapshot_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(heat_meter_snapshot, k, v)
@@ -123,7 +123,7 @@ async def patch_water_meter_snapshot(water_meter_snapshot_id: int, body: ChangeW
                                      db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     water_meter_snapshot = db.query(WaterMeterSnapshot).filter_by(id=water_meter_snapshot_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(water_meter_snapshot, k, v)
@@ -165,7 +165,7 @@ async def patch_electricity_meter_snapshot(electricity_meter_snapshot_id: int,
                                            db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     electricity_meter_snapshot = db.query(ElectricityMeterSnapshot).filter_by(id=electricity_meter_snapshot_id).first()
 
-    args = {k: v for k, v in body.dict().items() if v}
+    args = {k: v for k, v in body.dict(exclude_unset=True).items()}
     if args:
         for k, v in args.items():
             setattr(electricity_meter_snapshot, k, v)
