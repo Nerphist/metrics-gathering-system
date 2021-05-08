@@ -19,7 +19,6 @@ urlpatterns = [
     path('groups/<int:user_group_id>/remove-user/<int:user_to_remove_id>', remove_from_group,
          name='Remove user from group'),
 
-    path('contact-info/', ContactInfoListView.as_view(), name='Get all contacts'),
     path('contact-info/<int:contact_info_id>/', ContactInfoRetrieveView.as_view(), name='Get contact info'),
 
 ]
