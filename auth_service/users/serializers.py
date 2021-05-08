@@ -60,6 +60,7 @@ class AddContactInfoSerializer(serializers.ModelSerializer):
 
 
 class PatchContactInfoSerializer(DefaultSerializer):
+    id = serializers.IntegerField(required=False)
     name = serializers.CharField(max_length=255, required=False)
     type = serializers.CharField(max_length=255, required=False)
     value = serializers.CharField(max_length=255, required=False)
@@ -77,6 +78,7 @@ class PatchUserSerializer(DefaultSerializer):
     last_name = serializers.CharField(max_length=255, required=False)
     email = serializers.EmailField(required=False)
     password = serializers.CharField(max_length=255, required=False)
+    contact_infos = PatchContactInfoSerializer(many=True, required=False)
 
     def validate_password(self, value: str) -> str:
         if value:

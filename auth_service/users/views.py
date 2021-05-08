@@ -70,6 +70,22 @@ class SingleUserView(APIView):
         if photo_file := request.FILES.get('photo'):
             photo_file.name = f'{user_id}---{photo_file.name}'
             user.photo = photo_file
+
+        contact_infos = serializer.validated_data.get('contact_infos', [])
+        for contact_info in contact_infos:
+            if contact_info.get('id'):
+                contact_info_model = ContactInfo.objects.filter(id=contact_info['id']).first()
+
+                contact_info_model.name = contact_info.get('name', contact_info_model.name)
+                contact_info_model.type = contact_info.get('type', contact_info_model.type)
+                contact_info_model.value = contact_info.get('value', contact_info_model.value)
+                contact_info_model.notes = contact_info.get('notes', contact_info_model.notes)
+
+                contact_info_model.save()
+            else:
+                contact_info['user_id'] = user_id
+                ContactInfo.objects.create(**contact_info)
+
         user.save()
         return Response(UserSerializer(user, context={'request': request}).data)
 
@@ -208,53 +224,7 @@ class UserGroupRetrieveView(APIView):
 
 
 @permission_classes([IsAuthenticated])
-class ContactInfoListView(APIView):
-
-    @swagger_auto_schema(request_body=AddContactInfoSerializer, responses={'201': ContactInfoSerializer})
-    def post(self, request: Request, *args, **kwargs):
-
-        serializer = AddContactInfoSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            contact_info = ContactInfo.objects.create(
-                name=serializer.validated_data.get('name'),
-                type=serializer.validated_data.get('type'),
-                value=serializer.validated_data.get('name'),
-                notes=serializer.validated_data.get('notes'),
-                user=request.user,
-            )
-        except IntegrityError:
-            return Response(data={'detail': 'Wrong contact info'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(data=ContactInfoSerializer(contact_info).data, status=status.HTTP_201_CREATED)
-
-    @swagger_auto_schema(responses={'200': ContactInfoSerializer(many=True)}, query_serializer=UserIdQuerySerializer)
-    def get(self, request: Request, *args, **kwargs):
-        if user_id := int(request.query_params.get('user_id', 0)):
-            user = User.objects.filter(id=user_id).first()
-            if not user:
-                return Response(data={'detail': 'Wrong user_id'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            user = request.user
-
-        contact_infos = user.contact_infos.all()
-        return Response(data=[ContactInfoSerializer(contact_info).data for contact_info in contact_infos])
-
-
-@permission_classes([IsAuthenticated])
 class ContactInfoRetrieveView(APIView):
-
-    @swagger_auto_schema(responses={'200': ContactInfoSerializer})
-    def get(self, request: Request, contact_info_id: int, *args, **kwargs):
-
-        contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
-        if not contact_info:
-            return Response(data={'detail': 'Contact info group not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.user) and contact_info not in request.user.contact_infos.all():
-            return Response(data={'detail': 'User cannot view this contact info'}, status=status.HTTP_403_FORBIDDEN)
-
-        return Response(data=ContactInfoSerializer(contact_info).data)
 
     @swagger_auto_schema()
     def delete(self, request: Request, contact_info_id: int, *args, **kwargs):
@@ -268,30 +238,6 @@ class ContactInfoRetrieveView(APIView):
         contact_info.delete()
 
         return Response(data={})
-
-    @swagger_auto_schema(request_body=PatchContactInfoSerializer, responses={'200': ContactInfoSerializer})
-    def patch(self, request: Request, contact_info_id: int, *args, **kwargs):
-        serializer = PatchContactInfoSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
-        if not contact_info:
-            return Response(data={'detail': 'Contact info not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if request.user != contact_info.user:
-            if not is_admin(request.user):
-                return Response(data={'detail': 'Only admin can do it'}, status=status.HTTP_403_FORBIDDEN)
-            elif not is_super_admin(request.user):
-                return Response(data={'detail': 'Only superadmin can change admin\'s information'},
-                                status=status.HTTP_403_FORBIDDEN)
-
-        contact_info.name = serializer.validated_data.get('name', contact_info.name)
-        contact_info.type = serializer.validated_data.get('type', contact_info.type)
-        contact_info.value = serializer.validated_data.get('value', contact_info.value)
-        contact_info.notes = serializer.validated_data.get('notes', contact_info.notes)
-
-        contact_info.save()
-        return Response(ContactInfoSerializer(contact_info).data)
 
 
 @swagger_auto_schema(method='GET', responses={'200': UserSerializer})
