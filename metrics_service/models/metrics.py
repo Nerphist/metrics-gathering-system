@@ -29,7 +29,7 @@ class WaterMeterSnapshot(Base):
 
     snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='water_meter_snapshot')
-    consumption = Column(Numeric, nullable=False, default=None)
+    consumption = Column(Numeric, nullable=False)
 
 
 class ElectricityMeterSnapshot(Base):
@@ -37,7 +37,7 @@ class ElectricityMeterSnapshot(Base):
 
     snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='electricity_meter_snapshot')
-    current_voltage = Column(Numeric, nullable=False, default=None)
+    current_voltage = Column(Numeric, nullable=False)
 
 
 class HeatMeterSnapshot(Base):
@@ -45,7 +45,15 @@ class HeatMeterSnapshot(Base):
 
     snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='heat_meter_snapshot')
-    current_voltage = Column(Numeric, nullable=False, default=None)
+    incoming_temperature = Column(Numeric, nullable=True)
+    outgoing_temperature = Column(Numeric, nullable=True)
+    incoming_pump_usage = Column(Numeric, nullable=True)
+    outgoing_pump_usage = Column(Numeric, nullable=True)
+    outside_temperature = Column(Numeric, nullable=True)
+    inside_temperature = Column(Numeric, nullable=True)
+    incoming_water_pressure = Column(Numeric, nullable=True)
+    outgoing_water_pressure = Column(Numeric, nullable=True)
+    heat_consumption = Column(Numeric, nullable=True)
 
 
 class MeterSnapshot(Base):

@@ -53,12 +53,23 @@ class AddMeterModel(make_add_model(sqlalchemy_to_pydantic(Meter))):
     electricity: Optional[AddElectricityMeterModel]
 
 
-AddMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(MeterSnapshot))
 AddHeatMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(HeatMeterSnapshot))
 AddElectricityMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(ElectricityMeterSnapshot))
 AddWaterMeterSnapshotModel = make_add_model(sqlalchemy_to_pydantic(WaterMeterSnapshot))
 
-ChangeMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(MeterSnapshot))
+
+class AddMeterSnapshotModel(make_add_model(sqlalchemy_to_pydantic(MeterSnapshot))):
+    heat: Optional[AddHeatMeterSnapshotModel]
+    electricity: Optional[AddElectricityMeterSnapshotModel]
+    water: Optional[AddWaterMeterSnapshotModel]
+
+
 ChangeHeatMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(HeatMeterSnapshot))
 ChangeElectricityMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(ElectricityMeterSnapshot))
 ChangeWaterMeterSnapshotModel = make_change_model(sqlalchemy_to_pydantic(WaterMeterSnapshot))
+
+
+class ChangeMeterSnapshotModel(make_change_model(sqlalchemy_to_pydantic(MeterSnapshot), fields_to_remove=['meter_id'])):
+    heat: Optional[ChangeHeatMeterSnapshotModel]
+    electricity: Optional[ChangeElectricityMeterSnapshotModel]
+    water: Optional[ChangeWaterMeterSnapshotModel]
