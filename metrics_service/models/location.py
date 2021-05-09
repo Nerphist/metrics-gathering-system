@@ -12,6 +12,58 @@ class FloorItemType(enum.Enum):
     Meter = 'Meter'
 
 
+class WindowType(enum.Enum):
+    Wood = 'Wood'
+    Plastic = 'Plastic'
+    Aluminium = 'Aluminium'
+
+
+class HeatingBatteryType(enum.Enum):
+    CastIron = 'CastIron'
+    Registered = 'Registered'
+    Panel = 'Panel'
+    Aluminium = 'Aluminium'
+
+
+class WaterEquipmentType(enum.Enum):
+    Toilet = 'Toilet'
+    Bath = 'Bath'
+    Shower = 'Shower'
+    Pissoir = 'Pissoir'
+
+
+class ElectricEquipmentGroup(enum.Enum):
+    LabEquipment = 'LabEquipment'
+    HouseholdEquipment = 'HouseholdEquipment'
+    ComputerEquipment = 'ComputerEquipment'
+    ClimateEquipment = 'ClimateEquipment'
+    LightningEquipment = 'LightningEquipment'
+
+
+class ElectricEquipmentType(enum.Enum):
+    Engine = 'Engine'
+    Workbench = 'Workbench'
+
+    Fridge = 'Fridge'
+    Microwave = 'Microwave'
+    Kettle = 'Kettle'
+
+    Monitor = 'Monitor'
+    Tower = 'Tower'
+    Printer = 'Printer'
+
+    Conditioner = 'Conditioner'
+    Heater = 'Heater'
+    FanHeater = 'FanHeater'
+    FanConvector = 'FanConvector'
+
+    LED = 'LED'
+    Halogen = 'Halogen'
+    Fluorescent = 'Fluorescent'
+    Incandescent = 'Incandescent'
+    Luminescent = 'Luminescent'
+
+
 class BuildingType(Base):
     __tablename__ = 'building_types'
 
@@ -81,17 +133,18 @@ class Floor(Base):
     height = Column(Numeric, nullable=True, default=None)
     floor_plan_document_id = Column(Integer, nullable=True)
     rooms = relationship("Room", backref="floor")
+    items = relationship("FloorPlanItem", backref="floor")
 
     __tableargs__ = (UniqueConstraint('index', 'building_id', name='_building_floor_uc'),)
 
 
-# class FloorPlanItem(Base):
-#     __tablename__ = 'floor_items'
-#
-#     floor_id = Column(Integer, ForeignKey('floors.id', ondelete='CASCADE'), nullable=False)
-#     type = Column(Enum(FloorItemType), nullable=False)
-#     item_id = Column(Integer)
-#
+class FloorPlanItem(Base):
+    __tablename__ = 'floor_items'
+
+    floor_id = Column(Integer, ForeignKey('floors.id', ondelete='CASCADE'), nullable=False)
+    type = Column(Enum(FloorItemType), nullable=False)
+    item_id = Column(Integer)
+
 
 class Room(Base):
     __tablename__ = 'rooms'
@@ -101,3 +154,45 @@ class Room(Base):
     designation = Column(String(255), nullable=True)
     size = Column(Numeric, nullable=True, default=None)
     responsible_department = Column(String(255), nullable=True)
+    windows = relationship("Window", backref="room")
+    heating_batteries = relationship("HeatingBattery", backref="room")
+    water_equipment = relationship("WaterEquipment", backref="room")
+    electric_equipment = relationship("ElectricEquipment", backref="room")
+
+
+class Window(Base):
+    __tablename__ = 'windows'
+
+    room_id = Column(Integer, ForeignKey('rooms.id', ondelete='CASCADE'), nullable=False)
+    amount = Column(Integer, nullable=False)
+    type = Column(Enum(WindowType), nullable=False)
+    thickness = Column(Numeric, nullable=True)
+    glazing_formula = Column(String(255), nullable=True)
+
+
+class HeatingBattery(Base):
+    __tablename__ = 'heating_batteries'
+
+    room_id = Column(Integer, ForeignKey('rooms.id', ondelete='CASCADE'), nullable=False)
+    amount = Column(Integer, nullable=False)
+    type = Column(Enum(HeatingBatteryType), nullable=False)
+    sections = Column(Integer, nullable=True)
+
+
+class WaterEquipment(Base):
+    __tablename__ = 'water_equipment'
+
+    room_id = Column(Integer, ForeignKey('rooms.id', ondelete='CASCADE'), nullable=False)
+    amount = Column(Integer, nullable=False)
+    type = Column(Enum(WaterEquipmentType), nullable=False)
+
+
+class ElectricEquipment(Base):
+    __tablename__ = 'electric_equipment'
+
+    room_id = Column(Integer, ForeignKey('rooms.id', ondelete='CASCADE'), nullable=False)
+    amount = Column(Integer, nullable=False)
+    group = Column(Enum(ElectricEquipmentGroup), nullable=False)
+    type = Column(Enum(ElectricEquipmentType), nullable=False)
+    power_per_unit = Column(Numeric, nullable=True)
+    subtype = Column(String(255), nullable=True)
