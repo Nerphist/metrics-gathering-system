@@ -176,7 +176,8 @@ class UserGroupListView(APIView):
         except IntegrityError:
             return Response(data={'detail': 'Such group already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(data=UserGroupSerializer(user_group).data, status=status.HTTP_201_CREATED)
+        return Response(data=UserGroupSerializer(user_group, context={'request': request}).data,
+                        status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(responses={'200': UserGroupSerializer(many=True)}, query_serializer=UserIdQuerySerializer)
     def get(self, request: Request, *args, **kwargs):
@@ -189,7 +190,8 @@ class UserGroupListView(APIView):
             groups = user.user_groups.all()
         else:
             groups = query.all()
-        return Response(data=[UserGroupSerializer(user_group).data for user_group in groups])
+        return Response(
+            data=[UserGroupSerializer(user_group, context={'request': request}).data for user_group in groups])
 
 
 @permission_classes([IsAuthenticated])
@@ -204,7 +206,7 @@ class UserGroupRetrieveView(APIView):
         if not is_admin(request.user) and user_group not in request.user.user_groups.all():
             return Response(data={'detail': 'User cannot view this group'}, status=status.HTTP_403_FORBIDDEN)
 
-        return Response(data=UserGroupSerializer(user_group).data)
+        return Response(data=UserGroupSerializer(user_group, context={'request': request}).data)
 
     @swagger_auto_schema()
     def delete(self, request: Request, user_group_id: int, *args, **kwargs):

@@ -141,6 +141,11 @@ class UserGroupSerializer(serializers.ModelSerializer):
         model = UserGroup
         fields = ('id', 'created', 'updated', 'name', 'admin', 'users',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['admin'].context.update(self.context)
+        self.fields['users'].context.update(self.context)
+
 
 class AddUserToGroupSerializer(DefaultSerializer):
     user_id = serializers.IntegerField(required=True)
