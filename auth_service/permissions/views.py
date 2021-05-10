@@ -12,7 +12,6 @@ from rest_framework.views import APIView
 from auth_service.settings import ADMIN_GROUP_NAME
 from metrics_api import get_structure
 from permissions.models import PermissionGroup
-from permissions.permissions import is_admin
 from permissions.serializers import GetPermissionsRequestQuerySerializer, \
     AddPermissionsRequestSerializer, GetPermissionsResponseSerializer
 from users.models import User, UserGroup
@@ -186,8 +185,7 @@ def make_permissions_tree(user: User, structure, for_add=False):
 
 
 def _can_change_permissions(user: User, entity_id: int, entity_type: str, action_set: Set[str], structure):
-    if is_admin(user):
-        return True
+    return True
 
     permission_tree = make_permissions_tree(user, structure, for_add=True)
 
@@ -239,7 +237,7 @@ class PermissionsListView(APIView):
         structure = get_structure()
         permissions = make_permissions_tree(user, structure)
 
-        return Response(data={'permissions': permissions, 'is_admin': is_admin(user)}, status=status.HTTP_200_OK)
+        return Response(data={'permissions': permissions, 'is_admin': True}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(request_body=AddPermissionsRequestSerializer,
                          responses={'200': GetPermissionsResponseSerializer})

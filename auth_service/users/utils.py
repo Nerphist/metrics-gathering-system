@@ -23,3 +23,27 @@ def generate_secret_key():
 
 def generate_expiration_date():
     return datetime.utcnow() + INVITATION_EXPIRATION_TIME
+
+
+def is_in_parent_group(user, current_group):
+    parent_groups = set()
+    while current_group.parent_group:
+        parent_groups.add(current_group.parent_group)
+        current_group = current_group.parent_group
+
+    if parent_groups.intersection(set(user.user_groups.all())):
+        return True
+
+    return False
+
+
+def is_admin_of_parent_group(user, current_group):
+    parent_groups = set()
+    while current_group.parent_group:
+        parent_groups.add(current_group.parent_group)
+        current_group = current_group.parent_group
+
+    if parent_groups.intersection(set(user.administrated_groups.all())):
+        return True
+
+    return False

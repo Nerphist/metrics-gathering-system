@@ -4,7 +4,7 @@ from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.mixins import RetrieveModelMixin, ListModelMixin
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,13 +15,12 @@ from rest_framework_simplejwt.views import TokenViewBase
 
 from auth_service.settings import ADMIN_GROUP_NAME
 from metrics_api import delete_metrics_user
-from permissions.permissions import is_admin, is_super_admin, ServerApiKeyAuthorized
+from permissions.permissions import is_super_admin, ServerApiKeyAuthorized
 from users.models import User, Invite, UserGroup, ContactInfo
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
-    AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, SwitchUserGroupAdminSerializer, \
-    PatchUserSerializer, UserIdQuerySerializer, ContactInfoSerializer, AddContactInfoSerializer, \
-    PatchContactInfoSerializer
-from users.utils import generate_random_email, generate_random_password
+    AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, AddUserGroupAdminSerializer, \
+    PatchUserSerializer, UserGroupsQuerySerializer, ChangeUserPasswordSerializer, UserListQuerySerializer
+from users.utils import generate_random_email, generate_random_password, is_in_parent_group, is_admin_of_parent_group
 
 
 @permission_classes([IsAuthenticated])
@@ -55,17 +54,14 @@ class SingleUserView(APIView):
         if not user:
             return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user != user:
-            if not is_admin(request.user):
-                return Response(data={'detail': 'Only admin can do it'}, status=status.HTTP_403_FORBIDDEN)
-            elif not is_super_admin(request.user):
-                return Response(data={'detail': 'Only superadmin can change admin\'s information'},
+        if user.activated:
+            if request.user != user:
+                return Response(data={'detail': 'Cannot change other users information'},
                                 status=status.HTTP_403_FORBIDDEN)
 
         user.first_name = serializer.validated_data.get('first_name', user.first_name)
         user.last_name = serializer.validated_data.get('last_name', user.last_name)
         user.email = serializer.validated_data.get('email', user.email)
-        user.password = serializer.validated_data.get('password', user.password)
 
         if photo_file := request.FILES.get('photo'):
             photo_file.name = f'{user_id}---{photo_file.name}'
@@ -96,10 +92,8 @@ class SingleUserView(APIView):
             return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if request.user != user:
-            if not is_admin(request.user):
-                return Response(data={'detail': 'Only admin can do it'}, status=status.HTTP_403_FORBIDDEN)
-            elif not is_super_admin(request.user):
-                return Response(data={'detail': 'Only superadmin can delete other admins'},
+            if not is_super_admin(request.user):
+                return Response(data={'detail': 'Only superadmin can delete other users'},
                                 status=status.HTTP_403_FORBIDDEN)
 
         delete_metrics_user(dict(request.headers), user.id)
@@ -108,12 +102,40 @@ class SingleUserView(APIView):
 
 
 @permission_classes([IsAuthenticated])
-class GetAllUsersView(ListModelMixin, GenericViewSet):
-    serializer_class = UserSerializer
+class ChangeUserPasswordView(APIView):
 
-    def get_queryset(self):
-        name = self.request.query_params.get('name', '')
-        return User.objects.filter(Q(first_name__contains=name) | Q(last_name__contains=name)).all()
+    @swagger_auto_schema(request_body=ChangeUserPasswordSerializer)
+    def post(self, request: Request, *args, **kwargs):
+        serializer = ChangeUserPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if not request.user.check_password(serializer.validated_data['old_password']):
+            return Response({'detail': 'Wrong password'}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+        return Response(data={})
+
+
+@permission_classes([IsAuthenticated])
+class GetAllUsersView(APIView):
+
+    @swagger_auto_schema(responses={'200': UserSerializer(many=True)}, query_serializer=UserListQuerySerializer)
+    def get(self, request, *args, **kwargs):
+        query = User.objects
+        if name := request.query_params.get('name'):
+            query = query.filter(Q(first_name__contains=name) | Q(last_name__contains=name))
+        if user_group_id := request.query_params.get('user_group_id'):
+            user_group = UserGroup.objects.filter(id=user_group_id).first()
+            if not user_group:
+                return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
+            if request.query_params.get('only_admins'):
+                users = user_group.admins.all()
+            else:
+                users = user_group.users.all()
+        else:
+            users = query.all()
+        return Response(data=[UserSerializer(user, context={'request': request}).data for user in users])
 
 
 class LoginView(TokenViewBase):
@@ -164,32 +186,41 @@ class UserGroupListView(APIView):
 
     @swagger_auto_schema(request_body=CreateUserGroupSerializer, responses={'201': UserGroupSerializer})
     def post(self, request: Request, *args, **kwargs):
-        if not is_admin(request.user):
-            return Response(data={'detail': 'Only admin can add groups'}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = CreateUserGroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        parent_group_id = serializer.validated_data.get('parent_group_id')
+        parent_group = UserGroup.objects.filter(id=parent_group_id).first()
+        if not parent_group:
+            return Response(data={'detail': 'Parent group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if parent_group not in request.user.administrated_groups.all():
+            return Response(data={'detail': 'User must be an admin of a parent group'},
+                            status=status.HTTP_403_FORBIDDEN)
+
         try:
-            user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), admin=request.user)
+            user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), parent_group=parent_group)
             user_group.users.add(request.user)
+            user_group.admins.add(request.user)
         except IntegrityError:
             return Response(data={'detail': 'Such group already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(data=UserGroupSerializer(user_group, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': UserGroupSerializer(many=True)}, query_serializer=UserIdQuerySerializer)
+    @swagger_auto_schema(responses={'200': UserGroupSerializer(many=True)}, query_serializer=UserGroupsQuerySerializer)
     def get(self, request: Request, *args, **kwargs):
-        query = UserGroup.objects
-
         if user_id := int(request.query_params.get('user_id', 0)):
             user = User.objects.filter(id=user_id).first()
             if not user:
-                return Response(data={'detail': 'Wrong user_id'}, status=status.HTTP_400_BAD_REQUEST)
-            groups = user.user_groups.all()
+                return Response(data={'detail': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if request.query_params.get('administrated'):
+                groups = user.administrated_groups.all()
+            else:
+                groups = user.user_groups.all()
         else:
-            groups = query.all()
+            groups = UserGroup.objects.all()
         return Response(
             data=[UserGroupSerializer(user_group, context={'request': request}).data for user_group in groups])
 
@@ -203,7 +234,7 @@ class UserGroupRetrieveView(APIView):
         user_group = UserGroup.objects.filter(id=user_group_id).first()
         if not user_group:
             return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.user) and user_group not in request.user.user_groups.all():
+        if user_group not in request.user.user_groups.all() and not is_in_parent_group(request.user, user_group):
             return Response(data={'detail': 'User cannot view this group'}, status=status.HTTP_403_FORBIDDEN)
 
         return Response(data=UserGroupSerializer(user_group, context={'request': request}).data)
@@ -214,7 +245,7 @@ class UserGroupRetrieveView(APIView):
         user_group = UserGroup.objects.filter(id=user_group_id).first()
         if not user_group:
             return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.user) and user_group.admin != request.user:
+        if request.user not in user_group.admins.all() and not is_admin_of_parent_group(request.user, user_group):
             return Response(data={'detail': 'User cannot delete this group'}, status=status.HTTP_403_FORBIDDEN)
 
         if user_group.name == ADMIN_GROUP_NAME:
@@ -230,12 +261,9 @@ class ContactInfoRetrieveView(APIView):
 
     @swagger_auto_schema()
     def delete(self, request: Request, contact_info_id: int, *args, **kwargs):
-
         contact_info = ContactInfo.objects.filter(id=contact_info_id).first()
         if not contact_info:
             return Response(data={'detail': 'Contact info not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.user) and contact_info.admin != request.user:
-            return Response(data={'detail': 'User cannot delete this contact info'}, status=status.HTTP_403_FORBIDDEN)
 
         contact_info.delete()
 
@@ -299,7 +327,7 @@ def add_user_to_group(request: Request, user_group_id: int, *args, **kwargs):
     if not user_group:
         return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if not is_admin(request.user) and user_group.admin != request.user:
+    if request.user not in user_group.admins.all():
         return Response(data={'detail': 'You must be a group admin to add users to it'},
                         status=status.HTTP_403_FORBIDDEN)
 
@@ -309,30 +337,27 @@ def add_user_to_group(request: Request, user_group_id: int, *args, **kwargs):
     return Response(data=UserGroupSerializer(user_group).data, status=status.HTTP_200_OK)
 
 
-@swagger_auto_schema(method='POST', request_body=SwitchUserGroupAdminSerializer, responses={'200': UserGroupSerializer})
+@swagger_auto_schema(method='POST', request_body=AddUserGroupAdminSerializer, responses={'200': UserGroupSerializer})
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def switch_user_group_admin(request: Request, user_group_id: int, *args, **kwargs):
-    serializer = SwitchUserGroupAdminSerializer(data=request.data)
+def add_group_admin(request: Request, user_group_id: int, *args, **kwargs):
+    serializer = AddUserGroupAdminSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
     user_group = UserGroup.objects.filter(id=user_group_id).first()
     if not user_group:
         return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
-    new_admin = User.objects.filter(id=serializer.validated_data.get('new_admin_id')).first()
+    new_admin = User.objects.filter(id=serializer.validated_data.get('user_id')).first()
     if not new_admin:
         return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if user_group.name == ADMIN_GROUP_NAME:
-        if not is_super_admin(request.user):
-            return Response(data={'detail': 'Only super admin can change this role'}, status=status.HTTP_403_FORBIDDEN)
-
-    if is_admin(request.user) or request.user == user_group.admin:
-        user_group.admin = new_admin
-        if new_admin not in user_group.users.all():
-            user_group.users.add(new_admin)
+    if request.user in user_group.admins.all() or is_admin_of_parent_group(request.user, user_group):
+        if new_admin not in user_group.admins.all():
+            user_group.admins.add(new_admin)
+            if new_admin not in user_group.users.all():
+                user_group.users.add(new_admin)
     else:
-        return Response(data={'detail': 'Only admin can remove others from the group'},
+        return Response(data={'detail': 'Only admin can add admins to the group'},
                         status=status.HTTP_403_FORBIDDEN)
 
     return Response(data=UserGroupSerializer(user_group).data, status=status.HTTP_200_OK)
@@ -350,23 +375,25 @@ def remove_from_group(request: Request, user_group_id: int, user_to_remove_id: i
     if not user_to_remove:
         return Response(data={'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if user_group.name == ADMIN_GROUP_NAME:
-        if user_to_remove == user_group.admin:
-            return Response(data={'detail': 'It is impossible ro remove super admin from the admin group'},
-                            status=status.HTTP_403_FORBIDDEN)
-        if not is_super_admin(request.user):
-            return Response(data={'detail': 'Only super admin can remove from admin group'},
-                            status=status.HTTP_403_FORBIDDEN)
+    if user_group not in user_to_remove.user_groups.all():
+        return Response(data={'detail': 'User does not belong to this group'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if is_admin(request.user) or request.user == user_group.admin:
-        user_group.users.remove(user_to_remove)
-        if user_to_remove == user_group.admin:
-            user_group.admin = request.user
-            user_group.save()
-            if request.user not in user_group.users.all():
-                user_group.users.add(request.user)
-    else:
-        return Response(data={'detail': 'Only admin can remove others from the group'},
-                        status=status.HTTP_403_FORBIDDEN)
+    if user_group.name == ADMIN_GROUP_NAME and request.user in user_group.admins.all() and len(
+            user_group.admins.all()) == 1:
+        return Response(data={'detail': 'Cannot remove the last super admin'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.user != user_to_remove:
+        if user_to_remove in user_group.admins.all():
+            if not is_admin_of_parent_group(request.user, user_group):
+                return Response(data={'detail': 'Not enough permissions to remove admin'},
+                                status=status.HTTP_403_FORBIDDEN)
+        else:
+            if request.user not in user_group.admins.all() and not is_admin_of_parent_group(request.user, user_group):
+                return Response(data={'detail': 'Not enough permissions to remove user'},
+                                status=status.HTTP_403_FORBIDDEN)
+
+    user_group.users.remove(user_to_remove)
+    if user_to_remove in user_group.admins.all():
+        user_group.admins.remove(user_to_remove)
 
     return Response(data=UserGroupSerializer(user_group).data, status=status.HTTP_200_OK)

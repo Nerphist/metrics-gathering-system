@@ -5,7 +5,6 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_login, PasswordField
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from permissions.permissions import is_admin
 from users.models import User, Invite, UserGroup, ContactInfo
 from utils import DefaultSerializer
 
@@ -19,11 +18,10 @@ class ContactInfoSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     contact_infos = ContactInfoSerializer(many=True)
     photo_url = serializers.SerializerMethodField()
-    is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email', 'is_admin',
+        fields = ('id', 'created', 'updated', 'email',
                   'password', 'first_name', 'last_name',
                   'contact_infos', 'photo_url', 'activated')
         extra_kwargs = {'password': {'write_only': True}}
@@ -33,9 +31,6 @@ class UserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
         else:
             return None
-
-    def get_is_admin(self, obj):
-        return is_admin(obj)
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
@@ -77,12 +72,12 @@ class PatchUserSerializer(DefaultSerializer):
     first_name = serializers.CharField(max_length=255, required=False)
     last_name = serializers.CharField(max_length=255, required=False)
     email = serializers.EmailField(required=False)
-    password = serializers.CharField(max_length=255, required=False)
     contact_infos = PatchContactInfoSerializer(many=True, required=False)
 
-    def validate_password(self, value: str) -> str:
-        if value:
-            return make_password(value)
+
+class ChangeUserPasswordSerializer(DefaultSerializer):
+    old_password = serializers.CharField(max_length=255, required=True)
+    new_password = serializers.CharField(max_length=255, required=True)
 
 
 class InviteSerializer(serializers.ModelSerializer):
@@ -134,17 +129,12 @@ class UserWithTokenSerializer(DefaultSerializer):
 
 
 class UserGroupSerializer(serializers.ModelSerializer):
-    admin = UserSerializer()
-    users = UserSerializer(many=True)
-
     class Meta:
         model = UserGroup
-        fields = ('id', 'created', 'updated', 'name', 'admin', 'users',)
+        fields = ('id', 'created', 'updated', 'name', 'parent_group_id')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['admin'].context.update(self.context)
-        self.fields['users'].context.update(self.context)
 
 
 class AddUserToGroupSerializer(DefaultSerializer):
@@ -153,11 +143,19 @@ class AddUserToGroupSerializer(DefaultSerializer):
 
 class CreateUserGroupSerializer(DefaultSerializer):
     name = serializers.CharField(required=True, max_length=255)
+    parent_group_id = serializers.IntegerField(required=True)
 
 
-class SwitchUserGroupAdminSerializer(DefaultSerializer):
-    new_admin_id = serializers.IntegerField(required=True)
+class AddUserGroupAdminSerializer(DefaultSerializer):
+    user_id = serializers.IntegerField(required=True)
 
 
-class UserIdQuerySerializer(DefaultSerializer):
+class UserGroupsQuerySerializer(DefaultSerializer):
     user_id = serializers.IntegerField(required=False)
+    administrated = serializers.IntegerField(required=False)
+
+
+class UserListQuerySerializer(DefaultSerializer):
+    name = serializers.CharField(required=False)
+    user_group_id = serializers.IntegerField(required=False)
+    only_admins = serializers.IntegerField(required=False)

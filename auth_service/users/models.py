@@ -54,7 +54,8 @@ class Invite(AbstractCreateUpdateModel):
 class UserGroup(AbstractCreateUpdateModel):
     name = models.CharField(max_length=255, unique=True)
     users = models.ManyToManyField(User, related_name='user_groups')
-    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='controlled_groups')
+    admins = models.ManyToManyField(User, related_name='administrated_groups')
+    parent_group = models.ForeignKey('UserGroup', on_delete=models.CASCADE, related_name='child_groups', null=True)
 
 
 class ContactInfo(AbstractCreateUpdateModel):
