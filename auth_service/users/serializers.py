@@ -29,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_photo_url(self, obj):
-        if obj.photo:
+        if obj.photo and 'request' in self.context:
             return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
         else:
             return None
