@@ -143,7 +143,9 @@ class FloorPlanItem(Base):
 
     floor_id = Column(Integer, ForeignKey('floors.id', ondelete='CASCADE'), nullable=False)
     type = Column(Enum(FloorItemType), nullable=False)
-    item_id = Column(Integer)
+    item_id = Column(Integer, nullable=False)
+    position_x = Column(Numeric, nullable=False)
+    position_y = Column(Numeric, nullable=False)
 
 
 class Room(Base):

@@ -3,7 +3,7 @@ from typing import List, Any
 from pydantic.main import BaseModel
 from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
-from models.location import Location, Building, Room, BuildingType, Floor, ResponsibleUser
+from models.location import Location, Building, Room, BuildingType, Floor, ResponsibleUser, FloorPlanItem
 from request_models import make_change_model, make_add_model
 from request_models.metrics_requests import MeterModel
 
@@ -41,8 +41,13 @@ class RoomModel(sqlalchemy_to_pydantic(Room)):
     pass
 
 
+class FloorPlanItemModel(sqlalchemy_to_pydantic(FloorPlanItem)):
+    pass
+
+
 class FloorModel(sqlalchemy_to_pydantic(Floor)):
     rooms: List[RoomModel]
+    items: List[FloorPlanItemModel]
 
 
 class BuildingTypeCountModel(BaseModel):
@@ -72,6 +77,7 @@ AddLocationModel = make_add_model(sqlalchemy_to_pydantic(Location))
 AddBuildingTypeModel = make_add_model(sqlalchemy_to_pydantic(BuildingType))
 AddBuildingModel = make_add_model(sqlalchemy_to_pydantic(Building))
 AddFloorModel = make_add_model(sqlalchemy_to_pydantic(Floor))
+AddFloorPlanItemModel = make_add_model(sqlalchemy_to_pydantic(FloorPlanItem))
 AddRoomModel = make_add_model(sqlalchemy_to_pydantic(Room))
 
 ChangeResponsibleUserModel = make_change_model(sqlalchemy_to_pydantic(ResponsibleUser))

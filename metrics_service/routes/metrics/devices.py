@@ -8,8 +8,7 @@ from db import get_db
 from models.metrics import Meter, ElectricityMeter, MeterType
 from permissions import is_admin_permission
 from request_models.metrics_requests import MeterModel, AddMeterModel, \
-    RecognizeMeterModel, ChangeMeterModel, AddElectricityMeterModel, \
-    ElectricityMeterModel, ChangeElectricityMeterModel
+    RecognizeMeterModel, ChangeMeterModel
 from routes import metrics_router
 
 
