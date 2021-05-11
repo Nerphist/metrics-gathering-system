@@ -39,7 +39,7 @@ class Tariff(AbstractCreateUpdateModel):
     type = models.CharField(choices=DocumentType.choices, max_length=255, null=False)
     notes = models.CharField(max_length=255)
 
-    file = models.FileField(null=False)
+    file = models.FileField(null=True, default=None)
 
     enacted_since = models.DateTimeField(null=True, default=None)
     commercial_price = models.DecimalField(null=True, default=None, max_digits=30, decimal_places=2)

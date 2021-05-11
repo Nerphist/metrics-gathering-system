@@ -23,16 +23,16 @@ class TariffListView(APIView):
         if not is_admin(request.headers):
             return Response(data={'detail': 'Only admins can create files'}, status=status.HTTP_403_FORBIDDEN)
 
-        if not (file := request.FILES.get('file')):
-            return Response(data={'detail': 'No file received'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             tariff = Tariff.objects.create(
                 **serializer.validated_data,
-                file=file
             )
         except IntegrityError:
             return Response(data={'detail': 'Wrong tariff info'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if file := request.FILES.get('file'):
+            tariff.file = file
+            tariff.save()
 
         return Response(data=TariffSerializer(tariff, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
