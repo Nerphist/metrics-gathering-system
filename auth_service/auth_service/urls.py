@@ -34,8 +34,9 @@ def create_admin():
     try:
         admin = User.objects.create(email=ADMIN_EMAIL, password=make_password(ADMIN_PASSWORD), first_name='admin',
                                     last_name='admin', activated=True)
-        admin_group = UserGroup.objects.create(name=ADMIN_GROUP_NAME, admin=admin)
+        admin_group = UserGroup.objects.create(name=ADMIN_GROUP_NAME)
         admin_group.users.add(admin)
+        admin_group.admins.add(admin)
     except:
         pass
 

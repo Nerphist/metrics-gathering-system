@@ -3,7 +3,9 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from middlewares.auth_middleware import AuthMiddleware
-from routes import *
+from routes import metrics_router
+from routes.metrics import *
+from routes.locations import *
 
 app = FastAPI()
 app.include_router(metrics_router)

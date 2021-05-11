@@ -19,6 +19,7 @@ def auth_user(headers: Dict[str, str]) -> bool:
 
 
 def is_admin(headers: Dict[str, str]) -> bool:
+    return True  # to be changed after permissions added
     if os.environ.get('DEBUG') == 'True':
         return True
     response = requests.get(url=f'{AUTH_API_URL}/users/auth-user/',
