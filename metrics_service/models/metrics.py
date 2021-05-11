@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Enum, Numeric
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Enum, Numeric, Boolean
 from sqlalchemy.orm import relationship
 
 from db import Base
@@ -94,6 +94,10 @@ class Meter(Base):
 
     secret_key = Column(String(255), default=uuid.uuid4, nullable=True)
     recognition_key = Column(String(255), default=uuid.uuid4, nullable=True)
+
+    is_working = Column(Boolean, default=True)
+    average_hours_per_day_usage = Column(Integer, nullable=True)
+    average_days_per_week_usage = Column(Integer, nullable=True)
 
 
 class ElectricityMeter(Base):
