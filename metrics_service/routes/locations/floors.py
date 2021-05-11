@@ -66,7 +66,7 @@ async def remove_floor(floor_id: int, db: Session = Depends(get_db), _=Depends(i
     return ""
 
 
-@metrics_router.post("/floor_plan_item-plan-items/", status_code=201, response_model=FloorPlanItemModel)
+@metrics_router.post("/floor-plan-items/", status_code=201, response_model=FloorPlanItemModel)
 async def add_floor_plan_item(body: AddFloorPlanItemModel, db: Session = Depends(get_db),
                               _=Depends(is_admin_permission)):
     if not (floor := db.query(Floor).filter_by(id=body.floor_id).first()):
@@ -88,7 +88,7 @@ async def add_floor_plan_item(body: AddFloorPlanItemModel, db: Session = Depends
     return FloorPlanItemModel.from_orm(floor_plan_item)
 
 
-@metrics_router.delete("/floor_plan_item-plan-items/{floor_plan_item_id}/", status_code=200)
+@metrics_router.delete("/floor-plan-items/{floor_plan_item_id}/", status_code=200)
 async def remove_floor_plan_item(floor_plan_item_id: int, db: Session = Depends(get_db),
                                  _=Depends(is_admin_permission)):
     db.query(FloorPlanItem).filter_by(id=floor_plan_item_id).delete()
