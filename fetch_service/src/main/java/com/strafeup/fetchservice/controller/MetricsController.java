@@ -32,7 +32,7 @@ public class MetricsController {
     private static final String SERVER_URL_CONTAINER = "http://172.28.0.4:8002/metrics/readings/?";
     private static final String SERVER_URL_LOCALHOST = "http://localhost:8002/metrics/readings/?";
 
-    private static final boolean debug = true;
+    private static final boolean debug = false;
 
     private RestTemplate restTemplate;
     private ReadingsService readingsService;
