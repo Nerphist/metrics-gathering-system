@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import login_rule, user_eligible_for_l
 from rest_framework_simplejwt.tokens import RefreshToken
 from hurry.filesize import size
 
-from documents.models import Document, DocumentationPart, SupplyContract
+from documents.models import Document, DocumentationPart, SupplyContract, Tariff, DocumentType
 from utils import DefaultSerializer
 
 
@@ -60,24 +60,46 @@ class ChangeDocumentationPartSerializer(DefaultSerializer):
 class SupplyContractSerializer(serializers.ModelSerializer, FileSerializer):
     class Meta:
         model = SupplyContract
-        fields = ('id', 'created', 'updated', 'name',
-                  'number', 'type', 'notes', 'start_date',
+        fields = ('id', 'created', 'updated', 'number', 'type', 'notes', 'start_date',
                   'expiration_date', 'file_size', 'file_name', 'file_url')
 
 
 class AddSupplyContractSerializer(DefaultSerializer):
-    name = serializers.CharField(required=True)
     number = serializers.IntegerField(required=False)
-    type = serializers.CharField(required=True)
+    type = serializers.ChoiceField(required=True, choices=DocumentType.choices)
     notes = serializers.CharField(required=False)
     start_date = serializers.DateTimeField(required=False)
     expiration_date = serializers.DateTimeField(required=False)
 
 
 class ChangeSupplyContractSerializer(DefaultSerializer):
-    name = serializers.CharField(required=False)
     number = serializers.IntegerField(required=False)
-    type = serializers.CharField(required=False)
+    type = serializers.ChoiceField(required=False, choices=DocumentType.choices)
     notes = serializers.CharField(required=False)
     start_date = serializers.DateTimeField(required=False)
     expiration_date = serializers.DateTimeField(required=False)
+
+
+class TariffSerializer(serializers.ModelSerializer, FileSerializer):
+    class Meta:
+        model = Tariff
+        fields = ('id', 'created', 'updated', 'type', 'notes', 'enacted_since',
+                  'commercial_price', 'reduced_price', 'residential_price', 'file_size', 'file_name', 'file_url')
+
+
+class AddTariffSerializer(DefaultSerializer):
+    type = serializers.ChoiceField(required=True, choices=DocumentType.choices)
+    notes = serializers.CharField(required=False)
+    enacted_since = serializers.DateTimeField(required=False)
+    commercial_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)
+    reduced_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)
+    residential_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)
+
+
+class ChangeTariffSerializer(DefaultSerializer):
+    type = serializers.ChoiceField(required=False, choices=DocumentType.choices)
+    notes = serializers.CharField(required=False)
+    enacted_since = serializers.DateTimeField(required=False)
+    commercial_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)
+    reduced_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)
+    residential_price = serializers.DecimalField(required=False, max_digits=20, decimal_places=2)

@@ -1,0 +1,4 @@
+from documents.views.documentation import DocumentationPartListView, DocumentationPartRetrieveView
+from documents.views.documents import DocumentListView, DocumentRetrieveView
+from documents.views.supply_contracts import SupplyContractListView, SupplyContractRetrieveView
+from documents.views.tariffs import TariffListView, TariffRetrieveView
