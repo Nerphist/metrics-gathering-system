@@ -20,4 +20,8 @@ public class ReadingDTO {
     public ReadingDTO(Double value) {
         this.value = value;
     }
+
+    public String[] toCSV(){
+        return new String[]{this.type, this.date.toString(), String.valueOf(this.deviceId), this.value.toString()};
+    }
 }
