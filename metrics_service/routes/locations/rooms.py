@@ -1,23 +1,25 @@
-from typing import List
-
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models.location import Room
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.location_requests import RoomModel, \
     AddRoomModel, ChangeRoomModel
 from routes import metrics_router
+from utils import paginate
 
 
-@metrics_router.get("/rooms/", status_code=200, response_model=List[RoomModel])
-async def get_rooms(floor_id: int = 0, db: Session = Depends(get_db)):
-    rooms = db.query(Room)
-    if floor_id:
-        rooms = rooms.filter_by(floor_id=floor_id)
-    return [RoomModel.from_orm(b) for b in rooms]
+@metrics_router.get("/rooms/", status_code=200, response_model=create_pagination_model(RoomModel))
+async def get_rooms(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=Room,
+        serializer=RoomModel,
+        request=request
+    )
 
 
 @metrics_router.post("/rooms/", status_code=201, response_model=RoomModel)

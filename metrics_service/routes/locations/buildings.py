@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -8,24 +8,30 @@ from auth_api import get_user
 from db import get_db
 from models.location import Building, BuildingType
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.location_requests import BuildingModel, AddBuildingModel, ChangeBuildingModel, BuildingTypeModel, \
     AddBuildingTypeModel, BuildingTypeCountModel
 from routes import metrics_router
+from utils import paginate
 
 
-@metrics_router.get("/building_types/", status_code=200, response_model=List[BuildingTypeModel])
-async def get_building_types(db: Session = Depends(get_db)):
-    building_types = db.query(BuildingType).all()
-    return [BuildingTypeModel.from_orm(b) for b in building_types]
+@metrics_router.get("/building-types/", status_code=200, response_model=create_pagination_model(BuildingTypeModel))
+async def get_building_types(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=BuildingType,
+        serializer=BuildingTypeModel,
+        request=request
+    )
 
 
-@metrics_router.get("/building_types/count/", status_code=200, response_model=List[BuildingTypeCountModel])
-async def get_building_types(db: Session = Depends(get_db)):
+@metrics_router.get("/building-types/count/", status_code=200, response_model=List[BuildingTypeCountModel])
+async def get_building_types_count(db: Session = Depends(get_db)):
     building_types = db.query(BuildingType).all()
     return [BuildingTypeCountModel(id=b.id, name=b.name, buildings_count=len(b.buildings)) for b in building_types]
 
 
-@metrics_router.post("/building_types/", status_code=201, response_model=BuildingTypeModel)
+@metrics_router.post("/building-types/", status_code=201, response_model=BuildingTypeModel)
 async def add_building_type(body: AddBuildingTypeModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     building_type = BuildingType(name=body.name)
     db.add(building_type)
@@ -36,7 +42,7 @@ async def add_building_type(body: AddBuildingTypeModel, db: Session = Depends(ge
     return BuildingTypeModel.from_orm(building_type)
 
 
-@metrics_router.patch("/building_types/{building_type_id}", status_code=200, response_model=BuildingTypeModel)
+@metrics_router.patch("/building-types/{building_type_id}", status_code=200, response_model=BuildingTypeModel)
 async def patch_building_type(building_type_id: int, body: AddBuildingTypeModel, db: Session = Depends(get_db),
                               _=Depends(is_admin_permission)):
     building_type = db.query(BuildingType).filter_by(id=building_type_id).first()
@@ -47,27 +53,25 @@ async def patch_building_type(building_type_id: int, body: AddBuildingTypeModel,
     return BuildingTypeModel.from_orm(building_type)
 
 
-@metrics_router.delete("/building_types/{building_type_id}/", status_code=200)
+@metrics_router.delete("/building-types/{building_type_id}/", status_code=200)
 async def remove_building_type(building_type_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
     db.query(BuildingType).filter_by(id=building_type_id).delete()
     db.commit()
     return ""
 
 
-@metrics_router.get("/buildings/", status_code=200, response_model=List[BuildingModel])
-async def get_buildings(db: Session = Depends(get_db), building_type_id: int = 0, location_id: int = 0, ):
-    building_models = db.query(Building)
-    if building_type_id:
-        building_models = building_models.filter_by(building_type_id=building_type_id)
-    if location_id:
-        building_models = building_models.filter_by(location_id=location_id)
-    building_models = building_models.all()
-
-    buildings = [BuildingModel.from_orm(b) for b in building_models]
-    for index, building in enumerate(building_models):
+@metrics_router.get("/buildings/", status_code=200, response_model=create_pagination_model(BuildingModel))
+async def get_buildings(request: Request, db: Session = Depends(get_db)):
+    paginated = paginate(
+        db=db,
+        db_model=Building,
+        serializer=BuildingModel,
+        request=request
+    )
+    for index, building in enumerate(paginated['items']):
         for user in building.responsible_people:
             user.user = get_user(user.user_id)
-    return buildings
+    return paginated
 
 
 @metrics_router.post("/buildings/", status_code=201, response_model=BuildingModel)
@@ -101,4 +105,3 @@ async def remove_building(building_id: int, db: Session = Depends(get_db), _=Dep
     db.query(Building).filter_by(id=building_id).delete()
     db.commit()
     return ""
-

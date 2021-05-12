@@ -1,7 +1,4 @@
-from datetime import datetime
-from typing import List, Optional
-
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException, Header, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -9,27 +6,21 @@ from db import get_db
 from models.metrics import MeterSnapshot, HeatMeterSnapshot, \
     ElectricityMeterSnapshot, MeterType, Meter
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.metrics_requests import MeterSnapshotModel, AddMeterSnapshotModel, ChangeMeterSnapshotModel, \
     AddAutoMeterSnapshotModel
 from routes import metrics_router
+from utils import paginate
 
 
-@metrics_router.get("/meter-snapshots/", status_code=200, response_model=List[MeterSnapshotModel])
-async def get_meter_snapshots(type_name: MeterType = '', date_start: datetime = None, date_end: datetime = None,
-                              meter_id: int = 0, db: Session = Depends(get_db)):
-    meter_snapshots = db.query(MeterSnapshot)
-    if meter_id:
-        meter_snapshots = meter_snapshots.filter(MeterSnapshot.meter_id == meter_id)
-    if type_name:
-        meter_snapshots = meter_snapshots.filter_by(type=type_name)
-    if meter_id:
-        meter_snapshots = meter_snapshots.filter_by(meter_id=meter_id)
-    if date_start:
-        meter_snapshots = meter_snapshots.filter(MeterSnapshot.creation_date >= date_start)
-    if date_end:
-        meter_snapshots = meter_snapshots.filter(MeterSnapshot.creation_date <= date_end)
-    meter_snapshots = meter_snapshots.all()
-    return [MeterSnapshotModel.from_orm(d) for d in meter_snapshots]
+@metrics_router.get("/meter-snapshots/", status_code=200, response_model=create_pagination_model(MeterSnapshotModel))
+async def get_meter_snapshots(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=MeterSnapshot,
+        serializer=MeterSnapshotModel,
+        request=request
+    )
 
 
 @metrics_router.post("/meter-snapshots/", status_code=201, response_model=MeterSnapshotModel)

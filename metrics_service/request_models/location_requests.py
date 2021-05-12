@@ -27,13 +27,13 @@ class UserModel(BaseModel):
     first_name: str
     last_name: str
     email: str
-    is_admin: bool
     contact_infos: List[ContactInfoModel]
 
 
 class ResponsibleUserModel(BaseModel):
     id: int
-    name: str
+    rank: str
+    building_id: int
     user: UserModel
 
 
@@ -69,7 +69,7 @@ class LocationModel(sqlalchemy_to_pydantic(Location)):
 
 
 class BuildingTypeModel(sqlalchemy_to_pydantic(BuildingType)):
-    buildings: List[BuildingModel]
+    pass
 
 
 AddResponsibleUserModel = make_add_model(sqlalchemy_to_pydantic(ResponsibleUser))

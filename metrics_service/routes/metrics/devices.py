@@ -1,15 +1,15 @@
-from typing import List
-
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models.metrics import Meter, ElectricityMeter, MeterType
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.metrics_requests import MeterModel, AddMeterModel, \
     RecognizeMeterModel, ChangeMeterModel
 from routes import metrics_router
+from utils import paginate
 
 
 @metrics_router.get("/meters/recognize/{recognition_key}/", status_code=201, response_model=RecognizeMeterModel)
@@ -20,13 +20,14 @@ async def recognize_meter(recognition_key: str, db: Session = Depends(get_db)):
     return {'meter_exists': True}
 
 
-@metrics_router.get("/meters/", status_code=200, response_model=List[MeterModel])
-async def get_meters(building_id: int = 0, db: Session = Depends(get_db)):
-    meters = db.query(Meter)
-    if building_id:
-        meters = meters.filter(Meter.building_id == building_id)
-    meters = meters.all()
-    return [MeterModel.from_orm(d) for d in meters]
+@metrics_router.get("/meters/", status_code=200, response_model=create_pagination_model(MeterModel))
+async def get_meters(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=Meter,
+        serializer=MeterModel,
+        request=request
+    )
 
 
 @metrics_router.post("/meters/", status_code=201, response_model=MeterModel)

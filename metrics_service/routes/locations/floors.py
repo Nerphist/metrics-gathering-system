@@ -1,6 +1,4 @@
-from typing import List
-
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -9,17 +7,21 @@ from db import get_db
 from models.location import Floor, FloorPlanItem, FloorItemType, Room
 from models.metrics import Meter
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.location_requests import FloorModel, AddFloorModel, ChangeFloorModel, AddFloorPlanItemModel, \
     FloorPlanItemModel
 from routes import metrics_router
+from utils import paginate
 
 
-@metrics_router.get("/floors/", status_code=200, response_model=List[FloorModel])
-async def get_floors(building_id: int = 0, db: Session = Depends(get_db)):
-    floors = db.query(Floor)
-    if building_id:
-        floors = floors.filter_by(building_id=building_id)
-    return [FloorModel.from_orm(b) for b in floors]
+@metrics_router.get("/floors/", status_code=200, response_model=create_pagination_model(FloorModel))
+async def get_floors(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=Floor,
+        serializer=FloorModel,
+        request=request
+    )
 
 
 @metrics_router.get("/floors/{floor_id}/", status_code=200, response_model=FloorModel)

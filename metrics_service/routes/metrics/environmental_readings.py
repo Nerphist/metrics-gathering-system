@@ -1,23 +1,26 @@
-from typing import List
-
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models.metrics import EnvironmentalReading
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.metrics_requests import EnvironmentalReadingModel, \
     AddEnvironmentalReadingModel, ChangeEnvironmentalReadingModel
 from routes import metrics_router
+from utils import paginate
 
 
-@metrics_router.get("/rooms/environmental-readings/", status_code=200, response_model=List[EnvironmentalReadingModel])
-async def get_environmental_readings(room_id: int = 0, db: Session = Depends(get_db)):
-    environmental_readings = db.query(EnvironmentalReading)
-    if room_id:
-        environmental_readings = environmental_readings.filter_by(room_id=room_id)
-    return [EnvironmentalReadingModel.from_orm(b) for b in environmental_readings]
+@metrics_router.get("/rooms/environmental-readings/", status_code=200,
+                    response_model=create_pagination_model(EnvironmentalReadingModel))
+async def get_environmental_readings(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=EnvironmentalReading,
+        serializer=EnvironmentalReadingModel,
+        request=request
+    )
 
 
 @metrics_router.post("/rooms/environmental-readings/", status_code=201, response_model=EnvironmentalReadingModel)

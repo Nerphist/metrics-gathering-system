@@ -37,4 +37,5 @@ def is_admin(headers: Dict[str, str]) -> bool:
                             headers={k.capitalize(): v for k, v in headers.items()})
     if response.status_code != 200:
         return False
+    return True
     return response.json()['is_admin']

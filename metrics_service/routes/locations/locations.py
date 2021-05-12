@@ -1,14 +1,16 @@
 from typing import List
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models.location import Building, Location
 from permissions import is_admin_permission
+from request_models import create_pagination_model
 from request_models.location_requests import LocationModel, AddLocationModel, ChangeLocationModel, HeadcountModel
 from routes import metrics_router
+from utils import paginate
 
 
 @metrics_router.get("/headcount/", status_code=200, response_model=HeadcountModel)
@@ -24,10 +26,14 @@ async def get_headcount(db: Session = Depends(get_db)):
     return model
 
 
-@metrics_router.get("/locations/", status_code=200, response_model=List[LocationModel])
-async def get_locations(db: Session = Depends(get_db)):
-    locations = db.query(Location).all()
-    return [LocationModel.from_orm(b) for b in locations]
+@metrics_router.get("/locations/", status_code=200, response_model=create_pagination_model(LocationModel))
+async def get_locations(request: Request, db: Session = Depends(get_db)):
+    return paginate(
+        db=db,
+        db_model=Location,
+        serializer=LocationModel,
+        request=request
+    )
 
 
 @metrics_router.post("/locations/", status_code=201, response_model=LocationModel)
