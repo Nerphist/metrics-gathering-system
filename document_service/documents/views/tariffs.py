@@ -10,6 +10,7 @@ from auth_api import is_admin
 from documents.models import Tariff
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddTariffSerializer, TariffSerializer, ChangeTariffSerializer
+from utils import paginate, make_pagination_serializer
 
 
 @permission_classes([IsAuthenticated])
@@ -37,13 +38,13 @@ class TariffListView(APIView):
         return Response(data=TariffSerializer(tariff, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': TariffSerializer(many=True)})
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(TariffSerializer)})
     def get(self, request: Request, *args, **kwargs):
-
-        tariffs = Tariff.objects.all()
-        return Response(
-            data=[TariffSerializer(tariff, context={'request': request}).data for tariff in
-                  tariffs])
+        return paginate(
+            db_model=Tariff,
+            serializer=TariffSerializer,
+            request=request,
+        )
 
 
 @permission_classes([IsAuthenticated])

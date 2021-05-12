@@ -10,6 +10,7 @@ from auth_api import is_admin
 from documents.models import SupplyContract
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddSupplyContractSerializer, SupplyContractSerializer, ChangeSupplyContractSerializer
+from utils import paginate, make_pagination_serializer
 
 
 @permission_classes([IsAuthenticated])
@@ -37,13 +38,13 @@ class SupplyContractListView(APIView):
         return Response(data=SupplyContractSerializer(supply_contract, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': SupplyContractSerializer(many=True)})
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(SupplyContractSerializer)})
     def get(self, request: Request, *args, **kwargs):
-
-        supply_contracts = SupplyContract.objects.all()
-        return Response(
-            data=[SupplyContractSerializer(supply_contract, context={'request': request}).data for supply_contract in
-                  supply_contracts])
+        return paginate(
+            db_model=SupplyContract,
+            serializer=SupplyContractSerializer,
+            request=request,
+        )
 
 
 @permission_classes([IsAuthenticated])

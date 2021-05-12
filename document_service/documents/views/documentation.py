@@ -11,6 +11,7 @@ from documents.models import DocumentationPart
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddDocumentationPartSerializer, \
     DocumentationPartSerializer, ChangeDocumentationPartSerializer
+from utils import make_pagination_serializer, paginate
 
 
 @permission_classes([IsAuthenticated])
@@ -57,13 +58,13 @@ class DocumentationPartListView(APIView):
         return Response(data=DocumentationPartSerializer(documentation_part, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': DocumentationPartSerializer(many=True)})
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(DocumentationPartSerializer)})
     def get(self, request: Request, *args, **kwargs):
-
-        documentation_parts = DocumentationPart.objects.all()
-        return Response(
-            data=[DocumentationPartSerializer(documentation_part, context={'request': request}).data for
-                  documentation_part in documentation_parts])
+        return paginate(
+            db_model=DocumentationPart,
+            serializer=DocumentationPartSerializer,
+            request=request,
+        )
 
 
 @permission_classes([IsAuthenticated])

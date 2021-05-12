@@ -10,6 +10,7 @@ from auth_api import is_admin
 from documents.models import Document
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddDocumentSerializer, DocumentSerializer, ChangeDocumentSerializer
+from utils import make_pagination_serializer, paginate
 
 
 @permission_classes([IsAuthenticated])
@@ -38,12 +39,13 @@ class DocumentListView(APIView):
         return Response(data=DocumentSerializer(document, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': DocumentSerializer(many=True)})
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(DocumentSerializer)})
     def get(self, request: Request, *args, **kwargs):
-
-        documents = Document.objects.all()
-        return Response(
-            data=[DocumentSerializer(document, context={'request': request}).data for document in documents])
+        return paginate(
+            db_model=Document,
+            serializer=DocumentSerializer,
+            request=request,
+        )
 
 
 @permission_classes([IsAuthenticated])
