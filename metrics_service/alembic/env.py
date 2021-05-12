@@ -11,9 +11,9 @@ fileConfig(config.config_file_name)
 
 import sys
 sys.path.append('C:\\Users\\User\\PycharmProjects\\metrics_gathering_system\\metrics_service')
-from models.metrics import Meter
-from models.location import Building
-target_metadata = Meter.metadata
+from models.metrics import EnvironmentalReading
+from models.location import Room
+target_metadata = EnvironmentalReading.metadata
 
 
 def run_migrations_offline():

@@ -91,3 +91,14 @@ class ElectricityMeter(Base):
     meter = relationship(Meter, back_populates='electricity')
     connection_type = Column(String(255), nullable=False)
     transformation_coefficient = Column(String(255), nullable=False)
+
+
+class EnvironmentalReading(Base):
+    __tablename__ = 'environmental_readings'
+
+    room_id = Column(Integer, ForeignKey('rooms.id', ondelete='CASCADE'), nullable=False)
+    automatic = Column(Boolean, nullable=True, default=True)
+    current_time = Column(DateTime, nullable=False)
+    temperature = Column(Numeric, nullable=True)
+    humidity = Column(Numeric, nullable=True)
+    notes = Column(String(255), nullable=True)

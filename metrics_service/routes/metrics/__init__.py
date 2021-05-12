@@ -1,1 +1,1 @@
-__all__ = ['devices', 'snapshots']
+__all__ = ['devices', 'environmental_readings', 'snapshots']

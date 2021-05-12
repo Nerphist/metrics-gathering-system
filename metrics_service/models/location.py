@@ -160,6 +160,7 @@ class Room(Base):
     heating_batteries = relationship("HeatingBattery", backref="room")
     water_equipment = relationship("WaterEquipment", backref="room")
     electric_equipment = relationship("ElectricEquipment", backref="room")
+    environmental_readings = relationship('EnvironmentalReading', backref='room')
 
 
 class Window(Base):
