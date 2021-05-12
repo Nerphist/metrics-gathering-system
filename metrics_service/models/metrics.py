@@ -15,29 +15,13 @@ class MeterType(enum.Enum):
     Electricity = 'Electricity'
 
 
-class Reading(Base):
-    __tablename__ = 'readings'
-
-    date = Column(DateTime, default=datetime.utcnow)
-    type = Column(String(255))
-    value = Column(String(255))
-    meter_id = Column(Integer, ForeignKey('meters.id', ondelete='CASCADE'))
-
-
-class WaterMeterSnapshot(Base):
-    __tablename__ = 'water_meter_snapshots'
-
-    snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
-    snapshot = relationship('MeterSnapshot', back_populates='water_meter_snapshot')
-    consumption = Column(Numeric, nullable=False)
-
-
 class ElectricityMeterSnapshot(Base):
     __tablename__ = 'electricity_meter_snapshots'
 
     snapshot_id = Column(Integer, ForeignKey('meter_snapshots.id', ondelete='CASCADE'), unique=True, nullable=False)
     snapshot = relationship('MeterSnapshot', back_populates='electricity_meter_snapshot')
-    current_voltage = Column(Numeric, nullable=False)
+    voltage = Column(Numeric, nullable=False)
+    current = Column(Numeric, nullable=True)
 
 
 class HeatMeterSnapshot(Base):
@@ -61,12 +45,13 @@ class MeterSnapshot(Base):
 
     meter_id = Column(Integer, ForeignKey('meters.id', ondelete='CASCADE'), nullable=False)
     type = Column(Enum(MeterType), nullable=False)
+    consumption = Column(Numeric, nullable=False)
+    automatic = Column(Boolean, nullable=False)
     creation_date = Column(DateTime, default=datetime.utcnow)
     current_time = Column(DateTime, nullable=True)
     uptime = Column(Numeric, nullable=True, default=None)
 
     heat_meter_snapshot = relationship(HeatMeterSnapshot, back_populates='snapshot', uselist=False)
-    water_meter_snapshot = relationship(WaterMeterSnapshot, back_populates='snapshot', uselist=False)
     electricity_meter_snapshot = relationship(ElectricityMeterSnapshot, back_populates='snapshot', uselist=False)
 
 
@@ -88,7 +73,6 @@ class Meter(Base):
     other_notes = Column(String(255), nullable=True)
     verification_interval_sec = Column(Integer, nullable=True)
 
-    readings = relationship(Reading, backref='meter')
     snapshots = relationship(MeterSnapshot, backref='meter')
     electricity = relationship('ElectricityMeter', back_populates='meter', uselist=False)
 
