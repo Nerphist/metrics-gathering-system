@@ -3,14 +3,13 @@ from typing import Type
 from fastapi import Request
 from pydantic.main import BaseModel
 from sqlalchemy import desc, asc
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Session
 
 from db import Base
 
 
-def apply_filtering(db: Session, db_model: Type['Base'], request: Request, query: Query = None):
-    if not query:
-        query = db.query(db_model)
+def apply_filtering(db: Session, db_model: Type['Base'], request: Request):
+    query = db.query(db_model)
 
     query_params = dict(request.query_params)
     page_number = int(query_params.pop('page', 1))
@@ -56,9 +55,8 @@ def apply_filtering(db: Session, db_model: Type['Base'], request: Request, query
     return result_models, count, page_number
 
 
-def paginate(db: Session, db_model: Type['Base'], serializer: Type['BaseModel'], request: Request,
-             query: Query = None):
-    result_models, count, page_number = apply_filtering(db, db_model, request, query)
+def paginate(db: Session, db_model: Type['Base'], serializer: Type['BaseModel'], request: Request):
+    result_models, count, page_number = apply_filtering(db, db_model, request)
 
     items = [serializer.from_orm(obj) for obj in result_models]
     return {
