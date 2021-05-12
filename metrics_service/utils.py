@@ -32,7 +32,7 @@ def apply_filtering(db: Session, db_model: Type['Base'], request: Request):
             query = query.filter(getattr(db_model, filter_arg) <= value)
         if operator == 'eq':
             query = query.filter(getattr(db_model, filter_arg) == value)
-        if operator == 'like':
+        if operator == 'icontains':
             query = query.filter(getattr(db_model, filter_arg).ilike(f'%{value}%'))
         if operator == 'in':
             value = [s.strip() for s in value.split(',')]

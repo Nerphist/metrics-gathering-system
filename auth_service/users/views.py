@@ -21,6 +21,7 @@ from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSe
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, AddUserGroupAdminSerializer, \
     PatchUserSerializer, UserGroupsQuerySerializer, ChangeUserPasswordSerializer, UserListQuerySerializer
 from users.utils import generate_random_email, generate_random_password, is_in_parent_group, is_admin_of_parent_group
+from utils import paginate, make_pagination_serializer
 
 
 @permission_classes([IsAuthenticated])
@@ -120,22 +121,26 @@ class ChangeUserPasswordView(APIView):
 @permission_classes([IsAuthenticated])
 class GetAllUsersView(APIView):
 
-    @swagger_auto_schema(responses={'200': UserSerializer(many=True)}, query_serializer=UserListQuerySerializer)
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(UserSerializer)},
+                         query_serializer=UserListQuerySerializer)
     def get(self, request, *args, **kwargs):
-        query = User.objects
-        if name := request.query_params.get('name'):
-            query = query.filter(Q(first_name__contains=name) | Q(last_name__contains=name))
-        if user_group_id := request.query_params.get('user_group_id'):
+        query = None
+        query_params = {k: v[0] for k, v in dict(request.query_params).items()}
+        if user_group_id := query_params.pop('user_group_id', None):
             user_group = UserGroup.objects.filter(id=user_group_id).first()
             if not user_group:
                 return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
-            if request.query_params.get('only_admins'):
-                users = user_group.admins.all()
+            if query_params.pop('only_admins', None):
+                query = user_group.admins
             else:
-                users = user_group.users.all()
-        else:
-            users = query.all()
-        return Response(data=[UserSerializer(user, context={'request': request}).data for user in users])
+                query = user_group.users
+        return paginate(
+            db_model=User,
+            serializer=UserSerializer,
+            request=request,
+            query=query,
+            query_params=query_params
+        )
 
 
 class LoginView(TokenViewBase):
@@ -208,21 +213,33 @@ class UserGroupListView(APIView):
         return Response(data=UserGroupSerializer(user_group, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={'200': UserGroupSerializer(many=True)}, query_serializer=UserGroupsQuerySerializer)
+    @swagger_auto_schema(responses={'200': make_pagination_serializer(UserGroupSerializer)},
+                         query_serializer=UserGroupsQuerySerializer)
     def get(self, request: Request, *args, **kwargs):
-        if user_id := int(request.query_params.get('user_id', 0)):
+        query_params = {k: v[0] for k, v in dict(request.query_params).items()}
+
+        if user_id := query_params.pop('user_id', None):
             user = User.objects.filter(id=user_id).first()
             if not user:
                 return Response(data={'detail': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-            if request.query_params.get('administrated'):
-                groups = user.administrated_groups.all()
-            else:
-                groups = user.user_groups.all()
         else:
-            groups = UserGroup.objects.all()
-        return Response(
-            data=[UserGroupSerializer(user_group, context={'request': request}).data for user_group in groups])
+            user = request.user
+
+        if query_params.pop('administrated', None):
+            query = user.administrated_groups
+        else:
+            query = user.user_groups
+
+        print(query_params)
+        print(query_params)
+        print(query_params)
+        return paginate(
+            db_model=UserGroup,
+            serializer=UserGroupSerializer,
+            request=request,
+            query=query,
+            query_params=query_params
+        )
 
 
 @permission_classes([IsAuthenticated])
@@ -278,12 +295,17 @@ def get_user_info(request: Request, *args, **kwargs):
     return Response(ser.data)
 
 
-@swagger_auto_schema(method='GET', responses={'200': InviteSerializer(many=True)})
+@swagger_auto_schema(method='GET', responses={'200': make_pagination_serializer(InviteSerializer)})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_all_created_invitations(request: Request, *args, **kwargs):
-    invites = Invite.objects.filter(inviter=request.user).filter(invitee__activated=False).all()
-    return Response(data=[InviteSerializer(invite).data for invite in invites])
+    query = Invite.objects.filter(inviter=request.user).filter(invitee__activated=False)
+    return paginate(
+        db_model=Invite,
+        serializer=InviteSerializer,
+        request=request,
+        query=query,
+    )
 
 
 @swagger_auto_schema(method='POST', request_body=AddUserSerializer, responses={'201': InviteSerializer})

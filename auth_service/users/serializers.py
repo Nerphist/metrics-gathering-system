@@ -156,6 +156,5 @@ class UserGroupsQuerySerializer(DefaultSerializer):
 
 
 class UserListQuerySerializer(DefaultSerializer):
-    name = serializers.CharField(required=False)
     user_group_id = serializers.IntegerField(required=False)
     only_admins = serializers.IntegerField(required=False)
