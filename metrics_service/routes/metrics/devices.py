@@ -3,8 +3,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
+from models import PermissionSet
 from models.metrics import Meter, ElectricityMeter, MeterType
-from permissions import is_admin_permission
+from permissions import has_permission
 from request_models import create_pagination_model
 from request_models.metrics_requests import MeterModel, AddMeterModel, \
     RecognizeMeterModel, ChangeMeterModel
@@ -22,6 +23,7 @@ async def recognize_meter(recognition_key: str, db: Session = Depends(get_db)):
 
 @metrics_router.get("/meters/", status_code=200, response_model=create_pagination_model(MeterModel))
 async def get_meters(request: Request, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.MeterRead.value)
     return paginate(
         db=db,
         db_model=Meter,
@@ -31,7 +33,8 @@ async def get_meters(request: Request, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/meters/", status_code=201, response_model=MeterModel)
-async def add_meter(body: AddMeterModel, db: Session = Depends(get_db)):
+async def add_meter(request: Request, body: AddMeterModel, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.MeterEdit.value)
     meter_dict = body.dict()
     electricity = None
     if body.type == MeterType.Electricity:
@@ -53,8 +56,8 @@ async def add_meter(body: AddMeterModel, db: Session = Depends(get_db)):
 
 
 @metrics_router.patch("/meters/{meter_id}", status_code=200, response_model=MeterModel)
-async def patch_meter(meter_id: int, body: ChangeMeterModel, db: Session = Depends(get_db),
-                      _=Depends(is_admin_permission)):
+async def patch_meter(request: Request, meter_id: int, body: ChangeMeterModel, db: Session = Depends(get_db),):
+    has_permission(request, PermissionSet.MeterEdit.value)
     meter = db.query(Meter).filter_by(id=meter_id).first()
 
     change_dict = body.dict(exclude_unset=True)
@@ -84,7 +87,8 @@ async def patch_meter(meter_id: int, body: ChangeMeterModel, db: Session = Depen
 
 
 @metrics_router.delete("/meters/{meter_id}/", status_code=200)
-async def remove_meter(meter_id: int, db: Session = Depends(get_db)):
+async def remove_meter(request: Request, meter_id: int, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.MeterEdit.value)
     db.query(Meter).filter_by(id=meter_id).delete()
     db.commit()
     return ""

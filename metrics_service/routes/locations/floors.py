@@ -4,9 +4,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
+from models import PermissionSet
 from models.location import Floor, FloorPlanItem, FloorItemType, Room
 from models.metrics import Meter
-from permissions import is_admin_permission
+from permissions import has_permission
 from request_models import create_pagination_model
 from request_models.location_requests import FloorModel, AddFloorModel, ChangeFloorModel, AddFloorPlanItemModel, \
     FloorPlanItemModel
@@ -16,6 +17,7 @@ from utils import paginate
 
 @metrics_router.get("/floors/", status_code=200, response_model=create_pagination_model(FloorModel))
 async def get_floors(request: Request, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.FloorRead.value)
     return paginate(
         db=db,
         db_model=Floor,
@@ -24,17 +26,9 @@ async def get_floors(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@metrics_router.get("/floors/{floor_id}/", status_code=200, response_model=FloorModel)
-async def get_floor(floor_id: int = 0, db: Session = Depends(get_db)):
-    floor = db.query(Floor).filter_by(id=floor_id).first()
-    if not floor:
-        raise HTTPException(detail='Floor does not exist', status_code=404)
-
-    return FloorModel.from_orm(floor)
-
-
 @metrics_router.post("/floors/", status_code=201, response_model=FloorModel)
-async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+async def add_floor(request: Request, body: AddFloorModel, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.FloorEdit.value)
     floor = Floor(**body.dict())
     db.add(floor)
     try:
@@ -45,8 +39,8 @@ async def add_floor(body: AddFloorModel, db: Session = Depends(get_db), _=Depend
 
 
 @metrics_router.patch("/floors/{floor_id}", status_code=200, response_model=FloorModel)
-async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depends(get_db),
-                      _=Depends(is_admin_permission)):
+async def patch_floor(request: Request, floor_id: int, body: ChangeFloorModel, db: Session = Depends(get_db), ):
+    has_permission(request, PermissionSet.FloorEdit.value)
     floor = db.query(Floor).filter_by(id=floor_id).first()
     if not floor:
         raise HTTPException(detail='Floor does not exist', status_code=404)
@@ -62,15 +56,16 @@ async def patch_floor(floor_id: int, body: ChangeFloorModel, db: Session = Depen
 
 
 @metrics_router.delete("/floors/{floor_id}/", status_code=200)
-async def remove_floor(floor_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+async def remove_floor(request: Request, floor_id: int, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.FloorEdit.value)
     db.query(Floor).filter_by(id=floor_id).delete()
     db.commit()
     return ""
 
 
 @metrics_router.post("/floor-plan-items/", status_code=201, response_model=FloorPlanItemModel)
-async def add_floor_plan_item(body: AddFloorPlanItemModel, db: Session = Depends(get_db),
-                              _=Depends(is_admin_permission)):
+async def add_floor_plan_item(request: Request, body: AddFloorPlanItemModel, db: Session = Depends(get_db), ):
+    has_permission(request, PermissionSet.FloorEdit.value)
     if not (floor := db.query(Floor).filter_by(id=body.floor_id).first()):
         raise HTTPException(detail='Floor does not exist', status_code=404)
 
@@ -91,8 +86,9 @@ async def add_floor_plan_item(body: AddFloorPlanItemModel, db: Session = Depends
 
 
 @metrics_router.delete("/floor-plan-items/{floor_plan_item_id}/", status_code=200)
-async def remove_floor_plan_item(floor_plan_item_id: int, db: Session = Depends(get_db),
-                                 _=Depends(is_admin_permission)):
+async def remove_floor_plan_item(request: Request, floor_plan_item_id: int, db: Session = Depends(get_db),
+                                 ):
+    has_permission(request, PermissionSet.FloorEdit.value)
     db.query(FloorPlanItem).filter_by(id=floor_plan_item_id).delete()
     db.commit()
     return ""

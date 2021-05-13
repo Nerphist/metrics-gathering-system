@@ -28,14 +28,3 @@ def auth_user(headers: Dict[str, str]) -> bool:
     response = requests.get(url=f'{AUTH_API_URL}/users/auth-user/',
                             headers={k.capitalize(): v for k, v in headers.items()})
     return response.status_code == 200
-
-
-def is_admin(headers: Dict[str, str]) -> bool:
-    if os.environ.get('DEBUG') == 'True':
-        return True
-    response = requests.get(url=f'{AUTH_API_URL}/users/auth-user/',
-                            headers={k.capitalize(): v for k, v in headers.items()})
-    if response.status_code != 200:
-        return False
-    return True
-    return response.json()['is_admin']

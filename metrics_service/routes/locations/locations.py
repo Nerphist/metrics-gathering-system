@@ -5,8 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
+from models import PermissionSet
 from models.location import Building, Location
-from permissions import is_admin_permission
+from permissions import has_permission
 from request_models import create_pagination_model
 from request_models.location_requests import LocationModel, AddLocationModel, ChangeLocationModel, HeadcountModel
 from routes import metrics_router
@@ -28,6 +29,7 @@ async def get_headcount(db: Session = Depends(get_db)):
 
 @metrics_router.get("/locations/", status_code=200, response_model=create_pagination_model(LocationModel))
 async def get_locations(request: Request, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.LocationRead.value)
     return paginate(
         db=db,
         db_model=Location,
@@ -37,7 +39,8 @@ async def get_locations(request: Request, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/locations/", status_code=201, response_model=LocationModel)
-async def add_location(body: AddLocationModel, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+async def add_location(request: Request, body: AddLocationModel, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.LocationEdit.value)
     location = Location(name=body.name, latitude=body.latitude, longitude=body.longitude)
     db.add(location)
     try:
@@ -48,8 +51,9 @@ async def add_location(body: AddLocationModel, db: Session = Depends(get_db), _=
 
 
 @metrics_router.patch("/locations/{location_id}", status_code=200, response_model=LocationModel)
-async def patch_location(location_id: int, body: ChangeLocationModel, db: Session = Depends(get_db),
-                         _=Depends(is_admin_permission)):
+async def patch_location(request: Request, location_id: int, body: ChangeLocationModel,
+                         db: Session = Depends(get_db), ):
+    has_permission(request, PermissionSet.LocationEdit.value)
     location = db.query(Location).filter_by(id=location_id).first()
 
     args = {k: v for k, v in body.dict(exclude_unset=True).items()}
@@ -63,7 +67,8 @@ async def patch_location(location_id: int, body: ChangeLocationModel, db: Sessio
 
 
 @metrics_router.delete("/locations/{location_id}/", status_code=200)
-async def remove_location(location_id: int, db: Session = Depends(get_db), _=Depends(is_admin_permission)):
+async def remove_location(request: Request, location_id: int, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.LocationEdit.value)
     db.query(Location).filter_by(id=location_id).delete()
     db.commit()
     return ""

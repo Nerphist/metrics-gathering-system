@@ -28,6 +28,7 @@ class UserModel(BaseModel):
     last_name: str
     email: str
     contact_infos: List[ContactInfoModel]
+    permissions: List[str]
 
 
 class ResponsibleUserModel(BaseModel):

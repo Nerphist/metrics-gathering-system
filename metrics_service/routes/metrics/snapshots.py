@@ -3,9 +3,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import get_db
+from models import PermissionSet
 from models.metrics import MeterSnapshot, HeatMeterSnapshot, \
     ElectricityMeterSnapshot, MeterType, Meter
-from permissions import is_admin_permission
+from permissions import has_permission
 from request_models import create_pagination_model
 from request_models.metrics_requests import MeterSnapshotModel, AddMeterSnapshotModel, ChangeMeterSnapshotModel, \
     AddAutoMeterSnapshotModel
@@ -15,6 +16,7 @@ from utils import paginate
 
 @metrics_router.get("/meter-snapshots/", status_code=200, response_model=create_pagination_model(MeterSnapshotModel))
 async def get_meter_snapshots(request: Request, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.MeterSnapshotRead.value)
     return paginate(
         db=db,
         db_model=MeterSnapshot,
@@ -24,7 +26,8 @@ async def get_meter_snapshots(request: Request, db: Session = Depends(get_db)):
 
 
 @metrics_router.post("/meter-snapshots/", status_code=201, response_model=MeterSnapshotModel)
-async def add_meter_snapshot(body: AddMeterSnapshotModel, db: Session = Depends(get_db), ):
+async def add_meter_snapshot(request: Request, body: AddMeterSnapshotModel, db: Session = Depends(get_db), ):
+    has_permission(request, PermissionSet.MeterSnapshotEdit.value)
     snapshot_dict = body.dict()
     snapshot_dict['automatic'] = False
     heat_dict = snapshot_dict.pop('heat', {})
@@ -79,8 +82,9 @@ async def add_meter_snapshot_auto(body: AddAutoMeterSnapshotModel, db: Session =
 
 
 @metrics_router.patch("/meter-snapshots/{meter_snapshot_id}", status_code=200, response_model=MeterSnapshotModel)
-async def patch_meter_snapshot(meter_snapshot_id: int, body: ChangeMeterSnapshotModel, db: Session = Depends(get_db),
-                               _=Depends(is_admin_permission)):
+async def patch_meter_snapshot(request: Request, meter_snapshot_id: int, body: ChangeMeterSnapshotModel,
+                               db: Session = Depends(get_db), ):
+    has_permission(request, PermissionSet.MeterSnapshotEdit.value)
     meter_snapshot = db.query(MeterSnapshot).filter_by(id=meter_snapshot_id).first()
 
     previous_type = meter_snapshot.type
@@ -122,7 +126,8 @@ async def patch_meter_snapshot(meter_snapshot_id: int, body: ChangeMeterSnapshot
 
 
 @metrics_router.delete("/meter-snapshots/{meter_snapshot_id}/", status_code=200)
-async def remove_meter_snapshot(meter_snapshot_id: int, db: Session = Depends(get_db)):
+async def remove_meter_snapshot(request: Request, meter_snapshot_id: int, db: Session = Depends(get_db)):
+    has_permission(request, PermissionSet.MeterSnapshotEdit.value)
     db.query(MeterSnapshot).filter_by(id=meter_snapshot_id).delete()
     db.commit()
     return ""
