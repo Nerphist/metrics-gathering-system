@@ -29,6 +29,8 @@ class PermissionSet(enum.Enum):
     SupplyContractEdit = 'SupplyContractEdit'
     TariffRead = 'TariffRead'
     TariffEdit = 'TariffEdit'
+    DocumentEdit = 'DocumentEdit'
+    DocumentationEdit = 'DocumentationEdit'
 
 
 class UserManager(BaseUserManager):

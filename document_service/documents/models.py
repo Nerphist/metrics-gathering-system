@@ -1,6 +1,17 @@
+import enum
+
 from django.db import models
 
 from utils import AbstractCreateUpdateModel
+
+
+class PermissionSet(enum.Enum):
+    SupplyContractRead = 'SupplyContractRead'
+    SupplyContractEdit = 'SupplyContractEdit'
+    TariffRead = 'TariffRead'
+    TariffEdit = 'TariffEdit'
+    DocumentEdit = 'DocumentEdit'
+    DocumentationEdit = 'DocumentationEdit'
 
 
 class DocumentType(models.TextChoices):

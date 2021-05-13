@@ -6,8 +6,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auth_api import is_admin
-from documents.models import Document
+from auth_api import has_permission
+from documents.models import Document, PermissionSet
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddDocumentSerializer, DocumentSerializer, ChangeDocumentSerializer
 from utils import make_pagination_serializer, paginate
@@ -21,8 +21,9 @@ class DocumentListView(APIView):
         serializer = AddDocumentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can create files'}, status=status.HTTP_403_FORBIDDEN)
+        if not has_permission(request.headers, PermissionSet.DocumentEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         if not (file := request.FILES.get('file')):
             return Response(data={'detail': 'No file received'}, status=status.HTTP_400_BAD_REQUEST)
@@ -62,12 +63,12 @@ class DocumentRetrieveView(APIView):
 
     @swagger_auto_schema()
     def delete(self, request: Request, document_id: int, *args, **kwargs):
-
+        if not has_permission(request.headers, PermissionSet.DocumentEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         document = Document.objects.filter(id=document_id).first()
         if not document:
             return Response(data={'detail': 'Document not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'User cannot delete this document'}, status=status.HTTP_403_FORBIDDEN)
 
         document.file.delete()
         document.delete()
@@ -79,8 +80,9 @@ class DocumentRetrieveView(APIView):
         serializer = ChangeDocumentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can change files'}, status=status.HTTP_403_FORBIDDEN)
+        if not has_permission(request.headers, PermissionSet.DocumentEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         file = request.FILES.get('file')
 

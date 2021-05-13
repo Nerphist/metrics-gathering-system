@@ -6,8 +6,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auth_api import is_admin
-from documents.models import DocumentationPart
+from auth_api import has_permission
+from documents.models import DocumentationPart, PermissionSet
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddDocumentationPartSerializer, \
     DocumentationPartSerializer, ChangeDocumentationPartSerializer
@@ -22,8 +22,9 @@ class DocumentationPartListView(APIView):
         serializer = AddDocumentationPartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can create files'}, status=status.HTTP_403_FORBIDDEN)
+        if not has_permission(request.headers, PermissionSet.DocumentationEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         if not (file := request.FILES.get('file')):
             return Response(data={'detail': 'No file received'}, status=status.HTTP_400_BAD_REQUEST)
@@ -81,13 +82,12 @@ class DocumentationPartRetrieveView(APIView):
 
     @swagger_auto_schema()
     def delete(self, request: Request, documentation_part_id: int, *args, **kwargs):
-
+        if not has_permission(request.headers, PermissionSet.DocumentationEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         documentation_part = DocumentationPart.objects.filter(id=documentation_part_id).first()
         if not documentation_part:
             return Response(data={'detail': 'DocumentationPart not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'User cannot delete this documentation_part'},
-                            status=status.HTTP_403_FORBIDDEN)
 
         order = documentation_part.order
         documentation_part.file.delete()
@@ -103,11 +103,12 @@ class DocumentationPartRetrieveView(APIView):
 
     @swagger_auto_schema(request_body=ChangeDocumentationPartSerializer, responses={'201': DocumentationPartSerializer})
     def patch(self, request: Request, documentation_part_id: int, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.DocumentationEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+
         serializer = ChangeDocumentationPartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can change files'}, status=status.HTTP_403_FORBIDDEN)
 
         file = request.FILES.get('file')
 

@@ -6,8 +6,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auth_api import is_admin
-from documents.models import Tariff
+from auth_api import has_permission
+from documents.models import Tariff, PermissionSet
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddTariffSerializer, TariffSerializer, ChangeTariffSerializer
 from utils import paginate, make_pagination_serializer
@@ -21,8 +21,9 @@ class TariffListView(APIView):
         serializer = AddTariffSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can create files'}, status=status.HTTP_403_FORBIDDEN)
+        if not has_permission(request.headers, PermissionSet.TariffEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         try:
             tariff = Tariff.objects.create(
@@ -40,6 +41,9 @@ class TariffListView(APIView):
 
     @swagger_auto_schema(responses={'200': make_pagination_serializer(TariffSerializer)})
     def get(self, request: Request, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.TariffRead.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         return paginate(
             db_model=Tariff,
             serializer=TariffSerializer,
@@ -53,6 +57,9 @@ class TariffRetrieveView(APIView):
     @swagger_auto_schema(responses={'200': TariffSerializer})
     def get(self, request: Request, tariff_id: int, *args, **kwargs):
 
+        if not has_permission(request.headers, PermissionSet.TariffRead.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         tariff = Tariff.objects.filter(id=tariff_id).first()
         if not tariff:
             return Response(data={'detail': 'Tariff not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -62,12 +69,12 @@ class TariffRetrieveView(APIView):
     @swagger_auto_schema()
     def delete(self, request: Request, tariff_id: int, *args, **kwargs):
 
+        if not has_permission(request.headers, PermissionSet.TariffEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         tariff = Tariff.objects.filter(id=tariff_id).first()
         if not tariff:
             return Response(data={'detail': 'Tariff not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'User cannot delete this tariff'},
-                            status=status.HTTP_403_FORBIDDEN)
 
         tariff.file.delete()
         tariff.delete()
@@ -76,11 +83,11 @@ class TariffRetrieveView(APIView):
 
     @swagger_auto_schema(request_body=ChangeTariffSerializer, responses={'201': TariffSerializer})
     def patch(self, request: Request, tariff_id: int, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.TariffEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         serializer = ChangeTariffSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can change files'}, status=status.HTTP_403_FORBIDDEN)
 
         file = request.FILES.get('file')
 

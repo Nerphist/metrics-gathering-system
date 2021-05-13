@@ -6,8 +6,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from auth_api import is_admin
-from documents.models import SupplyContract
+from auth_api import has_permission
+from documents.models import SupplyContract, PermissionSet
 from documents.permissions import IsAuthenticated
 from documents.serializers import AddSupplyContractSerializer, SupplyContractSerializer, ChangeSupplyContractSerializer
 from utils import paginate, make_pagination_serializer
@@ -21,8 +21,9 @@ class SupplyContractListView(APIView):
         serializer = AddSupplyContractSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can create files'}, status=status.HTTP_403_FORBIDDEN)
+        if not has_permission(request.headers, PermissionSet.SupplyContractEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         if not (file := request.FILES.get('file')):
             return Response(data={'detail': 'No file received'}, status=status.HTTP_400_BAD_REQUEST)
@@ -40,6 +41,9 @@ class SupplyContractListView(APIView):
 
     @swagger_auto_schema(responses={'200': make_pagination_serializer(SupplyContractSerializer)})
     def get(self, request: Request, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.SupplyContractRead.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         return paginate(
             db_model=SupplyContract,
             serializer=SupplyContractSerializer,
@@ -52,6 +56,9 @@ class SupplyContractRetrieveView(APIView):
 
     @swagger_auto_schema(responses={'200': SupplyContractSerializer})
     def get(self, request: Request, supply_contract_id: int, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.SupplyContractRead.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         supply_contract = SupplyContract.objects.filter(id=supply_contract_id).first()
         if not supply_contract:
@@ -61,13 +68,12 @@ class SupplyContractRetrieveView(APIView):
 
     @swagger_auto_schema()
     def delete(self, request: Request, supply_contract_id: int, *args, **kwargs):
-
+        if not has_permission(request.headers, PermissionSet.SupplyContractEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         supply_contract = SupplyContract.objects.filter(id=supply_contract_id).first()
         if not supply_contract:
             return Response(data={'detail': 'SupplyContract not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'User cannot delete this supply_contract'},
-                            status=status.HTTP_403_FORBIDDEN)
 
         supply_contract.file.delete()
         supply_contract.delete()
@@ -76,11 +82,11 @@ class SupplyContractRetrieveView(APIView):
 
     @swagger_auto_schema(request_body=ChangeSupplyContractSerializer, responses={'201': SupplyContractSerializer})
     def patch(self, request: Request, supply_contract_id: int, *args, **kwargs):
+        if not has_permission(request.headers, PermissionSet.SupplyContractEdit.value):
+            return Response(data={'detail': 'User has no permissions for this action'},
+                            status=status.HTTP_403_FORBIDDEN)
         serializer = ChangeSupplyContractSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        if not is_admin(request.headers):
-            return Response(data={'detail': 'Only admins can change files'}, status=status.HTTP_403_FORBIDDEN)
 
         file = request.FILES.get('file')
 

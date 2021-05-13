@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from auth_api import auth_user, is_admin
+from auth_api import auth_user, has_permission
 
 
 class IsAuthenticated(BasePermission):
@@ -12,4 +12,4 @@ class IsAuthenticated(BasePermission):
 class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
-        return is_admin(request.headers)
+        return has_permission(request.headers)
