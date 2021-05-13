@@ -24,9 +24,8 @@ from rest_framework_simplejwt.views import token_refresh
 
 from auth_service import settings
 from auth_service.settings import ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_GROUP_NAME
-from users.models import UserGroup, User
+from users.models import UserGroup, User, PermissionSet
 from users.urls import urlpatterns as user_urls
-from permissions.urls import urlpatterns as permission_urls
 from users.views import LoginView, LogoutView
 
 
@@ -39,6 +38,10 @@ def create_admin():
         admin_group.admins.add(admin)
     except:
         pass
+
+    admin_group = UserGroup.objects.filter(name=ADMIN_GROUP_NAME).first()
+    admin_group.permissions = [e.value for e in PermissionSet]
+    admin_group.save()
 
 
 create_admin()
@@ -63,5 +66,4 @@ urlpatterns = [
                   path('login/', LoginView.as_view(), name='Login'),
                   path('logout/', LogoutView.as_view(), name='Logout'),
                   url(r'^users/', include(user_urls)),
-                  url(r'^permissions/', include(permission_urls)),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

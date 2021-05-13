@@ -1,6 +1,5 @@
 from django.contrib.auth.hashers import make_password
 from django.db import IntegrityError
-from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -15,13 +14,14 @@ from rest_framework_simplejwt.views import TokenViewBase
 
 from auth_service.settings import ADMIN_GROUP_NAME
 from metrics_api import delete_metrics_user
-from permissions.permissions import is_super_admin, ServerApiKeyAuthorized
+from permissions import is_super_admin, ServerApiKeyAuthorized
 from users.models import User, Invite, UserGroup, ContactInfo
 from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSerializer, InviteSerializer, \
     AddUserToGroupSerializer, UserGroupSerializer, CreateUserGroupSerializer, AddUserGroupAdminSerializer, \
-    PatchUserSerializer, UserGroupsQuerySerializer, ChangeUserPasswordSerializer, UserListQuerySerializer
+    PatchUserSerializer, UserGroupsQuerySerializer, ChangeUserPasswordSerializer, UserListQuerySerializer, \
+    ChangeUserGroupSerializer
 from users.utils import generate_random_email, generate_random_password, is_in_parent_group, is_admin_of_parent_group
-from utils import paginate, make_pagination_serializer
+from utils import paginate, make_pagination_serializer, check_if_user_can_change_permissions
 
 
 @permission_classes([IsAuthenticated])
@@ -199,12 +199,20 @@ class UserGroupListView(APIView):
         if not parent_group:
             return Response(data={'detail': 'Parent group not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        if parent_group not in request.user.administrated_groups.all():
+        if request.user not in parent_group.admins.all() and \
+                not is_admin_of_parent_group(request.user, parent_group):
             return Response(data={'detail': 'User must be an admin of a parent group'},
                             status=status.HTTP_403_FORBIDDEN)
 
+        permissions = serializer.validated_data.get('permissions', [])
+        if permissions:
+            if not set(permissions).issubset(parent_group.permissions):
+                return Response(data={'detail': 'Only permissions of parent group can be added'},
+                                status=status.HTTP_403_FORBIDDEN)
+
         try:
-            user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), parent_group=parent_group)
+            user_group = UserGroup.objects.create(name=serializer.validated_data.get('name'), parent_group=parent_group,
+                                                  permissions=permissions)
             user_group.users.add(request.user)
             user_group.admins.add(request.user)
         except IntegrityError:
@@ -227,12 +235,11 @@ class UserGroupListView(APIView):
 
         if query_params.pop('administrated', None):
             query = user.administrated_groups
-        else:
+        elif query_params.pop('membership', None):
             query = user.user_groups
+        else:
+            query = UserGroup.objects
 
-        print(query_params)
-        print(query_params)
-        print(query_params)
         return paginate(
             db_model=UserGroup,
             serializer=UserGroupSerializer,
@@ -255,6 +262,30 @@ class UserGroupRetrieveView(APIView):
             return Response(data={'detail': 'User cannot view this group'}, status=status.HTTP_403_FORBIDDEN)
 
         return Response(data=UserGroupSerializer(user_group, context={'request': request}).data)
+
+    @swagger_auto_schema(request_body=ChangeUserGroupSerializer, responses={'201': UserGroupSerializer})
+    def patch(self, request: Request, user_group_id: int, *args, **kwargs):
+        serializer = ChangeUserGroupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_group = UserGroup.objects.filter(id=user_group_id).first()
+        if not user_group:
+            return Response(data={'detail': 'User group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user not in user_group.admins.all() and \
+                not is_admin_of_parent_group(request.user, user_group):
+            return Response(data={'detail': 'User must be an admin of a group'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        user_group.name = serializer.validated_data.get('name', user_group.name)
+        if (permissions := serializer.validated_data.get('permissions')) is not None:
+            if not set(permissions).issubset(user_group.parent_group.permissions):
+                return Response(data={'detail': 'Only permissions of parent group can be used'},
+                                status=status.HTTP_403_FORBIDDEN)
+            user_group.set_permissions(permissions)
+
+        return Response(data=UserGroupSerializer(user_group, context={'request': request}).data,
+                        status=status.HTTP_200_OK)
 
     @swagger_auto_schema()
     def delete(self, request: Request, user_group_id: int, *args, **kwargs):

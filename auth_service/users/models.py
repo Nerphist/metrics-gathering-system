@@ -1,4 +1,6 @@
+import enum
 from enum import Enum
+from typing import List
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -6,6 +8,27 @@ from django.db import models, transaction
 
 from users.utils import generate_secret_key, generate_expiration_date
 from utils import AbstractCreateUpdateModel
+
+
+class PermissionSet(enum.Enum):
+    LocationRead = 'LocationRead'
+    LocationEdit = 'LocationEdit'
+    BuildingTypeRead = 'BuildingTypeRead'
+    BuildingTypeEdit = 'BuildingTypeEdit'
+    BuildingRead = 'BuildingRead'
+    BuildingEdit = 'BuildingEdit'
+    FloorRead = 'FloorRead'
+    FloorEdit = 'FloorEdit'
+    RoomRead = 'RoomRead'
+    RoomEdit = 'RoomEdit'
+    MeterRead = 'MeterRead'
+    MeterEdit = 'MeterEdit'
+    MeterSnapshotRead = 'MeterSnapshotRead'
+    MeterSnapshotEdit = 'MeterSnapshotEdit'
+    SupplyContractRead = 'SupplyContractRead'
+    SupplyContractEdit = 'SupplyContractEdit'
+    TariffRead = 'TariffRead'
+    TariffEdit = 'TariffEdit'
 
 
 class UserManager(BaseUserManager):
@@ -56,6 +79,22 @@ class UserGroup(AbstractCreateUpdateModel):
     users = models.ManyToManyField(User, related_name='user_groups')
     admins = models.ManyToManyField(User, related_name='administrated_groups')
     parent_group = models.ForeignKey('UserGroup', on_delete=models.CASCADE, related_name='child_groups', null=True)
+    permissions = models.JSONField(null=False, default=list)
+
+    def set_permissions(self, permissions: List[str]):
+        permissions_to_be_removed = list(set(self.permissions) - set(permissions))
+        if child_groups := self.child_groups.all():
+            for group in child_groups:
+                group.remove_permissions(permissions_to_be_removed)
+        self.permissions = permissions
+        self.save()
+
+    def remove_permissions(self, permissions: List[str]):
+        self.permissions = list(set(self.permissions) - set(permissions))
+        if child_groups := self.child_groups.all():
+            for group in child_groups:
+                group.remove_permissions(permissions)
+        self.save()
 
 
 class ContactInfo(AbstractCreateUpdateModel):

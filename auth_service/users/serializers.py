@@ -18,12 +18,12 @@ class ContactInfoSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     contact_infos = ContactInfoSerializer(many=True)
     photo_url = serializers.SerializerMethodField()
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'created', 'updated', 'email',
-                  'password', 'first_name', 'last_name',
-                  'contact_infos', 'photo_url', 'activated')
+        fields = ('id', 'created', 'updated', 'email', 'permissions', 'password',
+                  'first_name', 'last_name', 'contact_infos', 'photo_url', 'activated')
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_photo_url(self, obj):
@@ -31,6 +31,12 @@ class UserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri('/')[:-1] + '/media/' + str(obj.photo)
         else:
             return None
+
+    def get_permissions(self, obj):
+        permissions = set()
+        for user_group in obj.user_groups.all():
+            permissions.update(set(user_group.permissions))
+        return list(permissions)
 
     def validate_password(self, value: str) -> str:
         return make_password(value)
@@ -131,7 +137,7 @@ class UserWithTokenSerializer(DefaultSerializer):
 class UserGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserGroup
-        fields = ('id', 'created', 'updated', 'name', 'parent_group_id')
+        fields = ('id', 'created', 'updated', 'name', 'parent_group_id', 'permissions')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,6 +150,12 @@ class AddUserToGroupSerializer(DefaultSerializer):
 class CreateUserGroupSerializer(DefaultSerializer):
     name = serializers.CharField(required=True, max_length=255)
     parent_group_id = serializers.IntegerField(required=True)
+    permissions = serializers.ListField(required=False, child=serializers.CharField(max_length=255))
+
+
+class ChangeUserGroupSerializer(DefaultSerializer):
+    name = serializers.CharField(required=False, max_length=255)
+    permissions = serializers.ListField(required=False, child=serializers.CharField(max_length=255))
 
 
 class AddUserGroupAdminSerializer(DefaultSerializer):
@@ -153,6 +165,7 @@ class AddUserGroupAdminSerializer(DefaultSerializer):
 class UserGroupsQuerySerializer(DefaultSerializer):
     user_id = serializers.IntegerField(required=False)
     administrated = serializers.IntegerField(required=False)
+    membership = serializers.IntegerField(required=False)
 
 
 class UserListQuerySerializer(DefaultSerializer):

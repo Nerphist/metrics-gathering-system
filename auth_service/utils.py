@@ -1,10 +1,12 @@
-from typing import Type
+from typing import Type, List
 
 from django.db import models
 from django.db.models.sql import Query
 from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
+
+from users.utils import is_admin_of_parent_group
 
 
 class DefaultSerializer(serializers.Serializer):
@@ -66,3 +68,21 @@ def paginate(db_model: Type['models.Model'], serializer: Type['serializers.Seria
         'page_size': len(items),
         'items': items
     })
+
+
+def _user_can_interfere(user, permission_names: List[str], to_add: bool):
+    permission_set = set()
+    groups = user.administrated_groups if to_add else user.user_groups
+    for user_group in groups.all():
+        permission_set.update(user_group.permissions)
+    return set(permission_names).issubset(permission_set)
+
+
+def check_if_user_has_permission(user, permission_names: List[str]):
+    return _user_can_interfere(user, permission_names, False)
+
+
+def check_if_user_can_change_permissions(adding_user, user_group, permission_names: List[str]):
+    if not is_admin_of_parent_group(adding_user, user_group):
+        return False
+    return _user_can_interfere(adding_user, permission_names, True)
