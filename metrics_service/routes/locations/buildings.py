@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,7 +10,7 @@ from request_models import create_pagination_model
 from request_models.location_requests import BuildingModel, AddBuildingModel, ChangeBuildingModel, BuildingTypeModel, \
     AddBuildingTypeModel, BuildingTypeCountModel
 from routes import metrics_router
-from utils import paginate
+from utils import paginate, apply_filtering
 
 
 @metrics_router.get("/building-types/", status_code=200, response_model=create_pagination_model(BuildingTypeModel))
@@ -25,10 +23,17 @@ async def get_building_types(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@metrics_router.get("/building-types/count/", status_code=200, response_model=List[BuildingTypeCountModel])
-async def get_building_types_count(db: Session = Depends(get_db)):
-    building_types = db.query(BuildingType).all()
-    return [BuildingTypeCountModel(id=b.id, name=b.name, buildings_count=len(b.buildings)) for b in building_types]
+@metrics_router.get("/building-types/count/", status_code=200,
+                    response_model=create_pagination_model(BuildingTypeCountModel))
+async def get_building_types_count(request: Request, db: Session = Depends(get_db)):
+    result_models, count, page_number = apply_filtering(db, BuildingType, request)
+    items = [BuildingTypeCountModel(id=b.id, name=b.name, buildings_count=len(b.buildings)) for b in result_models]
+    return {
+        'total_size': count,
+        'page_number': page_number,
+        'page_size': len(items),
+        'items': items
+    }
 
 
 @metrics_router.post("/building-types/", status_code=201, response_model=BuildingTypeModel)
