@@ -70,19 +70,9 @@ def paginate(db_model: Type['models.Model'], serializer: Type['serializers.Seria
     })
 
 
-def _user_can_interfere(user, permission_names: List[str], to_add: bool):
+def check_if_user_has_permission(user, permission_names: List[str]):
     permission_set = set()
-    groups = user.administrated_groups if to_add else user.user_groups
+    groups = user.user_groups
     for user_group in groups.all():
         permission_set.update(user_group.permissions)
     return set(permission_names).issubset(permission_set)
-
-
-def check_if_user_has_permission(user, permission_names: List[str]):
-    return _user_can_interfere(user, permission_names, False)
-
-
-def check_if_user_can_change_permissions(adding_user, user_group, permission_names: List[str]):
-    if not is_admin_of_parent_group(adding_user, user_group):
-        return False
-    return _user_can_interfere(adding_user, permission_names, True)

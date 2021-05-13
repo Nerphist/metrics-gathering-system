@@ -21,7 +21,7 @@ from users.serializers import UserSerializer, UserWithTokenSerializer, AddUserSe
     PatchUserSerializer, UserGroupsQuerySerializer, ChangeUserPasswordSerializer, UserListQuerySerializer, \
     ChangeUserGroupSerializer
 from users.utils import generate_random_email, generate_random_password, is_in_parent_group, is_admin_of_parent_group
-from utils import paginate, make_pagination_serializer, check_if_user_can_change_permissions
+from utils import paginate, make_pagination_serializer
 
 
 @permission_classes([IsAuthenticated])
