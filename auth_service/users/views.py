@@ -434,7 +434,7 @@ def remove_from_group(request: Request, user_group_id: int, user_to_remove_id: i
     if user_group not in user_to_remove.user_groups.all():
         return Response(data={'detail': 'User does not belong to this group'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if user_group.name == ADMIN_GROUP_NAME and request.user in user_group.admins.all() and len(
+    if user_group.name == ADMIN_GROUP_NAME and user_to_remove.user in user_group.admins.all() and len(
             user_group.admins.all()) == 1:
         return Response(data={'detail': 'Cannot remove the last super admin'}, status=status.HTTP_400_BAD_REQUEST)
 

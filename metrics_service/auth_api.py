@@ -22,9 +22,12 @@ def get_user(user_id: int) -> UserModel:
     return user
 
 
-def auth_user(headers: Dict[str, str]) -> bool:
+def auth_user(headers: Dict[str, str]) -> UserModel:
     if os.environ.get('DEBUG') == 'True':
         return True
     response = requests.get(url=f'{AUTH_API_URL}/users/auth-user/',
                             headers={k.capitalize(): v for k, v in headers.items()})
-    return response.status_code == 200
+    if response.status_code == 404:
+        return False
+    user = UserModel(**response.json())
+    return user
