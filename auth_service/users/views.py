@@ -279,6 +279,9 @@ class UserGroupRetrieveView(APIView):
 
         user_group.name = serializer.validated_data.get('name', user_group.name)
         if (permissions := serializer.validated_data.get('permissions')) is not None:
+            if user_group.name == ADMIN_GROUP_NAME:
+                return Response(data={'detail': 'Administration group permissions cannot be changed'},
+                                status=status.HTTP_403_FORBIDDEN)
             if not set(permissions).issubset(user_group.parent_group.permissions):
                 return Response(data={'detail': 'Only permissions of parent group can be used'},
                                 status=status.HTTP_403_FORBIDDEN)
