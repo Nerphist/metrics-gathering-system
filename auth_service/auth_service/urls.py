@@ -13,6 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import sys
+
 from django.conf.urls import url
 from django.conf.urls.static import static
 from django.contrib.auth.hashers import make_password
@@ -30,6 +32,8 @@ from users.views import LoginView, LogoutView
 
 
 def create_admin():
+    if sys.argv[1] != 'runserver':
+        return True
     try:
         admin = User.objects.create(email=ADMIN_EMAIL, password=make_password(ADMIN_PASSWORD), first_name='admin',
                                     last_name='admin', activated=True)
