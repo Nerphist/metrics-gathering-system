@@ -49,7 +49,7 @@ def paginate(db_model: Type['models.Model'], serializer: Type['serializers.Seria
         if key.endswith('__in') or key == 'order_by':
             query_params[key] = [s.strip() for s in val.split(',')]
 
-    page_number = int(query_params.pop('page', 1))
+    page_number = int(query_params.pop('page_number', 1))
     page_size = int(query_params.pop('page_size', 10))
 
     order_by = query_params.pop('order_by', [])

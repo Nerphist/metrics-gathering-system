@@ -12,7 +12,7 @@ def apply_filtering(db: Session, db_model: Type['Base'], request: Request):
     query = db.query(db_model)
 
     query_params = dict(request.query_params)
-    page_number = int(query_params.pop('page', 1))
+    page_number = int(query_params.pop('page_number', 1))
     page_size = int(query_params.pop('page_size', 10))
 
     order_by = query_params.pop('order_by', None)
