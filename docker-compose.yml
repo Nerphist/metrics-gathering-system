@@ -138,7 +138,5 @@ volumes:
     external: true
   db-metrics-volume:
     external: true
-  db-tasks-volume:
-    external: true
   db-document-volume:
     external: true
